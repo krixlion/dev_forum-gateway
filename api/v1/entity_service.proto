@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package entity;
+
+option go_package="github.com/krixlion/dev_forum-entity/pkg/grpc/v1;pb";
+
+service EntityService {
+    
+}
