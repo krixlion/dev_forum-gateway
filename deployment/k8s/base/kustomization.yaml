@@ -1,0 +1,7 @@
+resources:
+  - gateway.yaml
+
+commonLabels:
+  app: gateway
+  aggregate: gateway
+  version: v0.1.0
