@@ -3,16 +3,13 @@ kind: Service
 metadata:
   name: gateway-service
 spec:
-  type: LoadBalancer
+  selector:
+    app: gateway
   ports:
     - name: graphql
       protocol: TCP
       port: 4000
       targetPort: 4000
-    - name: delve
-      protocol: TCP
-      port: 2345
-      targetPort: 2345
     - name: metrics
       protocol: TCP
       port: 2223
@@ -24,87 +21,30 @@ metadata:
   name: gateway-d
 spec:
   revisionHistoryLimit: 0
-  replicas: 1
   strategy:
     type: Recreate
   template:
     metadata:
+      labels:
+        app: gateway
     spec:
       restartPolicy: Always
       containers:
-        - env:
-            - name: TESTING
-              value: "false"
-            - name: TEST_PATH
-              value: github.com/krixlion/dev-forum_service/pkg/path/to/package
-            - name: BUILD_ARGS
-              value: -race cmd/main.go
-            - name: DEBUG_PORT
-              value: "2345"
-            - name: RUN_ARGS
-              value: -p 50051
-          image: "krixlion/go-reflex-dlv:1.21.3"
-          name: debug
+        - envFrom:
+            - configMapRef:
+                name: gateway-env
+          image: "krixlion/dev_forum-gateway:0.1.0"
+          imagePullPolicy: IfNotPresent
+          name: server
           ports:
             - name: graphql
               containerPort: 4000
-            - name: delve
-              containerPort: 2345
             - name: metrics
               containerPort: 2223
           resources:
             limits:
-              cpu: 2000m
-              memory: 750Mi
+              cpu: 20m
+              memory: 150Mi
             requests:
-              cpu: 250m
-              memory: 50Mi
-          volumeMounts:
-            - name: hot-reload
-              mountPath: /app
-      volumes:
-        - name: hot-reload
-          persistentVolumeClaim:
-            claimName: hot-reload-pvc-gateway
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: hot-reload-pvc-gateway
-spec:
-  storageClassName: local-storage
-  volumeName: hot-reload-pv-gateway
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 256Mi
----
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: hot-reload-pv-gateway
-spec:
-  storageClassName: local-storage
-  capacity:
-    storage: 1Gi
-  accessModes:
-    - ReadWriteOnce
-  volumeMode: Filesystem
-  local:
-    # Windows is mounted in Docker desktop VM under /run/desktop/mnt/host/{drive-letter}/your/path eg:
-    # path: /run/desktop/mnt/host/c/data
-    # Wsl is mounted in Docker desktop VM under /run/desktop/mnt/host/wsl
-    # Locally in WSL it's /mnt/wsl
-    # You should bind your project with k8s-mount for the time of development. Eg:
-    #     mkdir /mnt/wsl/k8s-mount && sudo mount --bind your_project_dir /mnt/wsl/k8s-mount
-    path: /run/desktop/mnt/host/wsl/k8s-mount/gateway
-  persistentVolumeReclaimPolicy: Delete
-  nodeAffinity:
-    required:
-      nodeSelectorTerms:
-        - matchExpressions:
-            - key: kubernetes.io/hostname
-              operator: In
-              values:
-                - docker-desktop
+              cpu: 5m
+              memory: 80Mi

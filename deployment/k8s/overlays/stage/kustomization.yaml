@@ -1,0 +1,11 @@
+resources:
+  - ../../base
+
+namespace: stage
+
+replicas:
+  - name: gateway-d
+    count: 3
+
+configMapGenerator:
+  - name: gateway-env
