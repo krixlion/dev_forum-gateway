@@ -35,7 +35,7 @@ func main() {
 		logging.Log("Failed to initialize tracing", "err", err)
 	}
 
-	service := service.MakeEntityService(getServiceDependencies())
+	service := service.MakeGatewayService(getServiceDependencies())
 	service.Run(ctx)
 
 	<-ctx.Done()

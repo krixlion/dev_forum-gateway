@@ -7,7 +7,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-type EntityService struct {
+type GatewayService struct {
 	logger logging.Logger
 	tracer trace.Tracer
 }
@@ -17,8 +17,8 @@ type Dependencies struct {
 	Tracer trace.Tracer
 }
 
-func MakeEntityService(d Dependencies) EntityService {
-	s := EntityService{
+func MakeGatewayService(d Dependencies) GatewayService {
+	s := GatewayService{
 		logger: d.Logger,
 		tracer: d.Tracer,
 	}
@@ -26,6 +26,6 @@ func MakeEntityService(d Dependencies) EntityService {
 	return s
 }
 
-func (s *EntityService) Run(ctx context.Context) {}
+func (s *GatewayService) Run(ctx context.Context) {}
 
-func (s *EntityService) Close() error { return nil }
+func (s *GatewayService) Close() error { return nil }
