@@ -1,6 +1,6 @@
 module github.com/krixlion/dev_forum-gateway
 
-go 1.21
+go 1.22
 
 require (
 	github.com/krixlion/dev_forum-lib v0.0.0-20231109223736-d836a1fad578
