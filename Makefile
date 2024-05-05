@@ -2,7 +2,8 @@
 include .env
 export $(shell sed 's/=.*//' .env)
 
-kubernetes = kubectl -n dev
+overlay ?= dev
+kubernetes = kubectl -n $(overlay)
 overlays-path = deployment/k8s/overlays
 
 mod-init:
