@@ -5,7 +5,6 @@ go 1.22
 require (
 	github.com/go-chi/chi v1.5.5
 	github.com/krixlion/dev_forum-article v0.0.0-20240404143603-43ae03cb8ceb
-	github.com/krixlion/dev_forum-auth v0.0.0-20240404141522-660f184fdf80
 	github.com/krixlion/dev_forum-lib v0.0.0-20240313181847-2e8e4f25bd26
 	github.com/krixlion/dev_forum-user v0.0.0-20240405150802-0442f0ab9e16
 	go.opentelemetry.io/otel v1.14.0
