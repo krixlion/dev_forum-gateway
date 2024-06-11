@@ -23,7 +23,7 @@ var port int
 var isTLS bool
 
 func init() {
-	portFlag := flag.Int("p", 80, "The GraphQL server port")
+	portFlag := flag.Int("p", 80, "The GraphQL server port.")
 	insecureFlag := flag.Bool("insecure", false, "Whether to use TLS.")
 	flag.Parse()
 	port = *portFlag
