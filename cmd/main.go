@@ -27,7 +27,7 @@ func init() {
 	insecureFlag := flag.Bool("insecure", false, "Whether to use TLS.")
 	flag.Parse()
 	port = *portFlag
-	isTLS = *insecureFlag
+	isTLS = !(*insecureFlag)
 }
 
 // Hardcoded root dir name.
