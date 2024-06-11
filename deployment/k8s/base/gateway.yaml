@@ -20,6 +20,9 @@ kind: Deployment
 metadata:
   name: gateway-d
 spec:
+  selector:
+    matchLabels:
+      app: gateway
   revisionHistoryLimit: 0
   strategy:
     type: Recreate
@@ -48,3 +51,5 @@ spec:
             requests:
               cpu: 5m
               memory: 80Mi
+          volumeMounts: []
+      volumes: []
