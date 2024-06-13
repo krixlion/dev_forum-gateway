@@ -6,14 +6,14 @@ spec:
   selector:
     app: gateway
   ports:
-    - name: graphql
+    - name: http
       protocol: TCP
       port: 4000
-      targetPort: 4000
+      targetPort: http
     - name: metrics
       protocol: TCP
       port: 2223
-      targetPort: 2223
+      targetPort: metrics
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -39,9 +39,10 @@ spec:
           image: "krixlion/dev_forum-gateway:0.1.0"
           imagePullPolicy: IfNotPresent
           name: server
+          args: []
           ports:
-            - name: graphql
-              containerPort: 4000
+            - name: http
+              containerPort: 80
             - name: metrics
               containerPort: 2223
           resources:

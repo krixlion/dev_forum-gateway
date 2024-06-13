@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"flag"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -26,7 +27,7 @@ var port int
 var isTLS bool
 
 func init() {
-	portFlag := flag.Int("p", 80, "The GraphQL server port.")
+	portFlag := flag.Int("p", 80, "The HTTP server port.")
 	insecureFlag := flag.Bool("insecure", false, "Whether to use TLS.")
 	flag.Parse()
 	port = *portFlag
@@ -42,13 +43,13 @@ func main() {
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
-	deps, err := getServiceDependencies(ctx, serviceName, isTLS)
+	deps, err := getServiceDependencies(ctx, serviceName, port, isTLS)
 	if err != nil {
 		logging.Log("Failed to initialize service dependencies", "err", err)
 		return
 	}
 
-	service := service.MakeGatewayService(port, deps)
+	service := service.MakeGatewayService(deps)
 
 	go func() {
 		if err := service.Run(); err != nil {
@@ -76,7 +77,7 @@ func main() {
 
 // getServiceDependencies is a Composition root.
 // Panics on any non-nil error.
-func getServiceDependencies(ctx context.Context, serviceName string, isTLS bool) (service.Dependencies, error) {
+func getServiceDependencies(ctx context.Context, serviceName string, port int, isTLS bool) (service.Dependencies, error) {
 	tracer := otel.Tracer(serviceName)
 
 	logger, err := logging.NewLogger()
@@ -122,7 +123,7 @@ func getServiceDependencies(ctx context.Context, serviceName string, isTLS bool)
 
 	httpServer := &http.Server{
 		Handler: router,
-		Addr:    "0.0.0.0:" + os.Getenv("PORT"),
+		Addr:    fmt.Sprintf("0.0.0.0:%d", port),
 	}
 
 	return service.Dependencies{

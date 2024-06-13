@@ -20,7 +20,7 @@ type Dependencies struct {
 	HttpServer *http.Server
 }
 
-func MakeGatewayService(port int, d Dependencies) GatewayService {
+func MakeGatewayService(d Dependencies) GatewayService {
 	s := GatewayService{
 		logger:     d.Logger,
 		tracer:     d.Tracer,
