@@ -1,6 +1,8 @@
 resources:
   - ../../base
   - dev-volume.yaml
+components:
+  - ../../components/tls
 
 namespace: dev
 

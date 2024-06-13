@@ -1,0 +1,27 @@
+- op: add
+  path: /spec/template/spec/volumes/-
+  value:
+    name: tls-certs
+    secret:
+      secretName: tls-secret-gateway
+
+- op: add
+  path: /spec/template/spec/containers/0/volumeMounts/-
+  value:
+    name: tls-certs
+    mountPath: /tls
+    readOnly: true
+
+- op: add
+  path: /spec/template/spec/volumes/-
+  value:
+    name: tls-client-certs
+    secret:
+      secretName: tls-secret-gateway-client
+
+- op: add
+  path: /spec/template/spec/containers/0/volumeMounts/-
+  value:
+    name: tls-client-certs
+    mountPath: /tls/client
+    readOnly: true

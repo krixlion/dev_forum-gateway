@@ -1,0 +1,18 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: tls-certificate-gateway-client
+spec:
+  secretName: tls-secret-gateway-client
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  usages:
+    - client auth
+    - key encipherment
+    - digital signature
+  dnsNames:
+    - "gateway-service"
+  issuerRef:
+    name: root-issuer
+    kind: Issuer

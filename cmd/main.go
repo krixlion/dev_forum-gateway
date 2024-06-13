@@ -13,10 +13,13 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/krixlion/dev_forum-gateway/pkg/api"
 	"github.com/krixlion/dev_forum-gateway/pkg/service"
+	"github.com/krixlion/dev_forum-lib/cert"
 	"github.com/krixlion/dev_forum-lib/env"
 	"github.com/krixlion/dev_forum-lib/logging"
 	"go.opentelemetry.io/otel"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 var port int
@@ -81,12 +84,34 @@ func getServiceDependencies(ctx context.Context, serviceName string, isTLS bool)
 		return service.Dependencies{}, err
 	}
 
-	userConn, err := grpc.DialContext(ctx, "")
+	var userCreds = insecure.NewCredentials()
+	var articleCreds = insecure.NewCredentials()
+	if isTLS {
+		caCertPool, err := cert.LoadCaPool(os.Getenv("TLS_CA_PATH"))
+		if err != nil {
+			return service.Dependencies{}, err
+		}
+
+		serverCert, err := cert.LoadX509KeyPair(os.Getenv("TLS_CERT_PATH"), os.Getenv("TLS_KEY_PATH"))
+		if err != nil {
+			return service.Dependencies{}, err
+		}
+
+		tlsConfig := &tls.Config{
+			RootCAs:      caCertPool,
+			Certificates: []tls.Certificate{serverCert},
+		}
+
+		userCreds = credentials.NewTLS(tlsConfig)
+		articleCreds = credentials.NewTLS(tlsConfig)
+	}
+
+	userConn, err := grpc.DialContext(ctx, "user-service:50051", grpc.WithTransportCredentials(userCreds))
 	if err != nil {
 		return service.Dependencies{}, err
 	}
 
-	articleConn, err := grpc.DialContext(ctx, "")
+	articleConn, err := grpc.DialContext(ctx, "article-service:50051", grpc.WithTransportCredentials(articleCreds))
 	if err != nil {
 		return service.Dependencies{}, err
 	}
@@ -95,22 +120,9 @@ func getServiceDependencies(ctx context.Context, serviceName string, isTLS bool)
 	router.Mount("/articles", api.MakeArticleHandler(articleConn))
 	router.Mount("/users", api.MakeUserHandler(userConn))
 
-	var tlsConfig *tls.Config
-	if isTLS {
-		cert, err := tls.LoadX509KeyPair("server.cert", "server.key")
-		if err != nil {
-			return service.Dependencies{}, err
-		}
-
-		tlsConfig = &tls.Config{
-			Certificates: []tls.Certificate{cert},
-		}
-	}
-
 	httpServer := &http.Server{
-		Handler:   router,
-		TLSConfig: tlsConfig,
-		Addr:      "0.0.0.0:" + os.Getenv("PORT"),
+		Handler: router,
+		Addr:    "0.0.0.0:" + os.Getenv("PORT"),
 	}
 
 	return service.Dependencies{

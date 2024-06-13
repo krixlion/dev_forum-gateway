@@ -1,16 +1,16 @@
 # Add a volume mounted to local codebase for instant hot reload.
 - op: add
-  path: /spec/template/spec/volumes
+  path: /spec/template/spec/volumes/-
   value:
-    - name: hot-reload
-      persistentVolumeClaim:
-        claimName: hot-reload-pvc-gateway
+    name: hot-reload
+    persistentVolumeClaim:
+      claimName: hot-reload-pvc-gateway
 
 - op: add
-  path: /spec/template/spec/containers/0/volumeMounts
+  path: /spec/template/spec/containers/0/volumeMounts/-
   value:
-    - name: hot-reload
-      mountPath: /app
+    name: hot-reload
+    mountPath: /app
 
 - op: replace
   path: /spec/template/spec/containers/0/name
