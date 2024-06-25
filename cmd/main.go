@@ -98,9 +98,14 @@ func getServiceDependencies(ctx context.Context, serviceName string, port int, i
 			return service.Dependencies{}, err
 		}
 
+		clientCert, err := cert.LoadX509KeyPair(os.Getenv("TLS_CLIENT_CERT_PATH"), os.Getenv("TLS_CLIENT_KEY_PATH"))
+		if err != nil {
+			return service.Dependencies{}, err
+		}
+
 		tlsConfig := &tls.Config{
 			RootCAs:      caCertPool,
-			Certificates: []tls.Certificate{serverCert},
+			Certificates: []tls.Certificate{clientCert, serverCert},
 		}
 
 		userCreds = credentials.NewTLS(tlsConfig)
