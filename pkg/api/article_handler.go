@@ -3,7 +3,7 @@ package api
 import (
 	"net/http"
 
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
 	pb "github.com/krixlion/dev_forum-article/pkg/grpc/v1"
 	"google.golang.org/grpc"
 )

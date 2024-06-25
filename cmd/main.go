@@ -11,7 +11,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
 	"github.com/krixlion/dev_forum-gateway/pkg/api"
 	"github.com/krixlion/dev_forum-gateway/pkg/service"
 	"github.com/krixlion/dev_forum-lib/cert"

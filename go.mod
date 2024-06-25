@@ -3,7 +3,7 @@ module github.com/krixlion/dev_forum-gateway
 go 1.22
 
 require (
-	github.com/go-chi/chi v1.5.5
+	github.com/go-chi/chi/v5 v5.0.14
 	github.com/krixlion/dev_forum-article v0.0.0-20240404143603-43ae03cb8ceb
 	github.com/krixlion/dev_forum-lib v0.0.0-20240313181847-2e8e4f25bd26
 	github.com/krixlion/dev_forum-user v0.0.0-20240405150802-0442f0ab9e16
@@ -17,6 +17,7 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/joho/godotenv v1.5.1 // indirect
+	github.com/spf13/afero v1.9.5 // indirect
 	github.com/uptrace/opentelemetry-go-extra/otelutil v0.1.21 // indirect
 	github.com/uptrace/opentelemetry-go-extra/otelzap v0.1.21 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
