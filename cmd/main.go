@@ -17,6 +17,10 @@ import (
 	"github.com/krixlion/dev_forum-lib/cert"
 	"github.com/krixlion/dev_forum-lib/env"
 	"github.com/krixlion/dev_forum-lib/logging"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+
+	"github.com/krixlion/dev_forum-lib/tracing"
+	pb "github.com/krixlion/dev_forum-user/pkg/grpc/v1"
 	"go.opentelemetry.io/otel"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -40,8 +44,12 @@ const serviceName = "gateway"
 
 func main() {
 	env.Load(projectDir)
-
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	shutdownTracing, err := tracing.InitProvider(ctx, serviceName)
+	if err != nil {
+		logging.Log("Failed to initialize tracing", "err", err)
+		return
+	}
 
 	deps, err := getServiceDependencies(ctx, serviceName, port, isTLS)
 	if err != nil {
@@ -62,6 +70,7 @@ func main() {
 
 	defer func() {
 		cancel()
+		shutdownTracing()
 
 		closeCtx, closeCancel := context.WithTimeout(context.Background(), time.Second*5)
 		defer closeCancel()
@@ -112,19 +121,19 @@ func getServiceDependencies(ctx context.Context, serviceName string, port int, i
 		articleCreds = credentials.NewTLS(tlsConfig)
 	}
 
-	userConn, err := grpc.DialContext(ctx, "user-service:50051", grpc.WithTransportCredentials(userCreds))
+	userConn, err := grpc.DialContext(ctx, "user-service:50051", grpc.WithTransportCredentials(userCreds), grpc.WithStatsHandler(otelgrpc.NewClientHandler()))
 	if err != nil {
 		return service.Dependencies{}, err
 	}
 
-	articleConn, err := grpc.DialContext(ctx, "article-service:50051", grpc.WithTransportCredentials(articleCreds))
+	articleConn, err := grpc.DialContext(ctx, "article-service:50051", grpc.WithTransportCredentials(articleCreds), grpc.WithStatsHandler(otelgrpc.NewClientHandler()))
 	if err != nil {
 		return service.Dependencies{}, err
 	}
 
 	router := chi.NewRouter()
 	router.Mount("/articles", api.MakeArticleHandler(articleConn))
-	router.Mount("/users", api.MakeUserHandler(userConn))
+	router.Mount("/users", api.MakeUserHandler(pb.NewUserServiceClient(userConn), tracer, logger))
 
 	httpServer := &http.Server{
 		Handler: router,
