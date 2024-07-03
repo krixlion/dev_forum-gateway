@@ -121,12 +121,18 @@ func getServiceDependencies(ctx context.Context, serviceName string, port int, i
 		articleCreds = credentials.NewTLS(tlsConfig)
 	}
 
-	userConn, err := grpc.NewClient("user-service:50051", grpc.WithTransportCredentials(userCreds), grpc.WithStatsHandler(otelgrpc.NewClientHandler()))
+	userConn, err := grpc.NewClient(os.Getenv("USER_SERVICE_SERVICE_HOST")+":"+os.Getenv("USER_SERVICE_SERVICE_PORT"),
+		grpc.WithTransportCredentials(userCreds),
+		grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
+	)
 	if err != nil {
 		return service.Dependencies{}, err
 	}
 
-	articleConn, err := grpc.NewClient("article-service:50051", grpc.WithTransportCredentials(articleCreds), grpc.WithStatsHandler(otelgrpc.NewClientHandler()))
+	articleConn, err := grpc.NewClient(os.Getenv("ARTICLE_SERVICE_SERVICE_HOST")+":"+os.Getenv("ARTICLE_SERVICE_SERVICE_PORT"),
+		grpc.WithTransportCredentials(articleCreds),
+		grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
+	)
 	if err != nil {
 		return service.Dependencies{}, err
 	}
