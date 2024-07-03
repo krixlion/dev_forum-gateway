@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"io"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -26,6 +25,14 @@ import (
 )
 
 var testtime = time.Now()
+
+func mustMarshalJSON(in any, t *testing.T) []byte {
+	out, err := json.Marshal(in)
+	if err != nil {
+		t.Fatal("Failed to marshal test data to json")
+	}
+	return out
+}
 
 func TestMakeUserHandler(t *testing.T) {
 	type args struct {
@@ -234,14 +241,7 @@ func TestUserHandler_CreateUser(t *testing.T) {
 				logger: nulls.NullLogger{},
 			},
 			args: args{
-				r: func() *http.Request {
-					v, err := json.Marshal(&pb.User{Id: "test-id"})
-					if err != nil {
-						log.Fatal("Failed to marshal test user to json")
-					}
-					r := httptest.NewRequest("POST", "/", bytes.NewReader(v))
-					return r
-				}(),
+				r: httptest.NewRequest("POST", "/", bytes.NewReader(mustMarshalJSON(&pb.User{Id: "test-id"}, t))),
 			},
 			want:    httpe.NewResponse(http.StatusCreated, map[string]string{"id": "test-id"}),
 			wantErr: false,
@@ -294,10 +294,7 @@ func TestUserHandler_UpdateUser(t *testing.T) {
 			},
 			args: args{
 				r: func() *http.Request {
-					v, err := json.Marshal(&pb.User{Id: "test-id", Name: "test-name"})
-					if err != nil {
-						log.Fatal("Failed to marshal test user to json")
-					}
+					v := mustMarshalJSON(&pb.User{Id: "test-id", Name: "test-name"}, t)
 					r := httptest.NewRequest("PATCH", "/", bytes.NewReader(v))
 					r.SetPathValue("id", "test-id")
 					return r
