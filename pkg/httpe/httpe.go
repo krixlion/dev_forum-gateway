@@ -84,6 +84,14 @@ func NewError(status int, msg string) error {
 	}
 }
 
+// NewGenericError returns a new HttpError with given status and its text as error message.
+func NewGenericError(status int) error {
+	return HttpError{
+		status: status,
+		msg:    http.StatusText(status),
+	}
+}
+
 // respondError takes an httpError and writes it to the given http.ResponseWriter.
 // Returns an error if it fails to encode the httpError to JSON or fails
 // to write to the http.ResponseWriter.

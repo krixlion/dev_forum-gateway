@@ -267,3 +267,32 @@ func Test_respond(t *testing.T) {
 		})
 	}
 }
+
+func TestNewGenericError(t *testing.T) {
+	type args struct {
+		status int
+	}
+	tests := []struct {
+		name string
+		args args
+		want HttpError
+	}{
+		{
+			name: "Test all fields are assigned and initialized",
+			args: args{
+				status: http.StatusNotFound,
+			},
+			want: HttpError{
+				status: http.StatusNotFound,
+				msg:    "Not Found",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := NewGenericError(tt.args.status); !cmp.Equal(got, tt.want, cmp.AllowUnexported(HttpError{})) {
+				t.Errorf("NewGenericError():\n got = %v\n want = %v\n", got, tt.want)
+			}
+		})
+	}
+}
