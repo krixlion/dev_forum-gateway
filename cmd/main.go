@@ -3,13 +3,13 @@ package main
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"flag"
 	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/krixlion/dev_forum-gateway/pkg/api"
@@ -45,11 +45,6 @@ const serviceName = "gateway"
 func main() {
 	env.Load(projectDir)
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
-	shutdownTracing, err := tracing.InitProvider(ctx, serviceName)
-	if err != nil {
-		logging.Log("Failed to initialize tracing", "err", err)
-		return
-	}
 
 	deps, err := getServiceDependencies(ctx, serviceName, port, isTLS)
 	if err != nil {
@@ -70,12 +65,8 @@ func main() {
 
 	defer func() {
 		cancel()
-		shutdownTracing()
 
-		closeCtx, closeCancel := context.WithTimeout(context.Background(), time.Second*5)
-		defer closeCancel()
-
-		if err := service.Shutdown(closeCtx); err != nil {
+		if err := service.Close(); err != nil {
 			logging.Log("Failed to shutdown service", "err", err)
 			return
 		}
@@ -87,6 +78,11 @@ func main() {
 // getServiceDependencies is a Composition root.
 // Panics on any non-nil error.
 func getServiceDependencies(ctx context.Context, serviceName string, port int, isTLS bool) (service.Dependencies, error) {
+	shutdownTracing, err := tracing.InitProvider(ctx, serviceName)
+	if err != nil {
+		return service.Dependencies{}, err
+	}
+
 	tracer := otel.Tracer(serviceName)
 
 	logger, err := logging.NewLogger()
@@ -150,5 +146,9 @@ func getServiceDependencies(ctx context.Context, serviceName string, port int, i
 		Logger:     logger,
 		Tracer:     tracer,
 		HttpServer: httpServer,
+		ShutdownFunc: func() error {
+			shutdownTracing()
+			return errors.Join(httpServer.Shutdown(ctx), userConn.Close(), articleConn.Close())
+		},
 	}, nil
 }

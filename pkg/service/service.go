@@ -1,7 +1,6 @@
 package service
 
 import (
-	"context"
 	"net/http"
 
 	"github.com/krixlion/dev_forum-lib/logging"
@@ -11,29 +10,31 @@ import (
 type GatewayService struct {
 	logger     logging.Logger
 	tracer     trace.Tracer
-	HttpServer *http.Server
+	httpServer *http.Server
+	shutdown   func() error
 }
 
 type Dependencies struct {
-	Logger     logging.Logger
-	Tracer     trace.Tracer
-	HttpServer *http.Server
+	Logger       logging.Logger
+	Tracer       trace.Tracer
+	HttpServer   *http.Server
+	ShutdownFunc func() error
 }
 
 func MakeGatewayService(d Dependencies) GatewayService {
 	s := GatewayService{
 		logger:     d.Logger,
 		tracer:     d.Tracer,
-		HttpServer: d.HttpServer,
+		httpServer: d.HttpServer,
 	}
 
 	return s
 }
 
 func (s *GatewayService) Run() error {
-	return s.HttpServer.ListenAndServe()
+	return s.httpServer.ListenAndServe()
 }
 
-func (s *GatewayService) Shutdown(ctx context.Context) error {
-	return s.HttpServer.Shutdown(ctx)
+func (s *GatewayService) Close() error {
+	return s.shutdown()
 }
