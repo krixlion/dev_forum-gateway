@@ -12,7 +12,7 @@ import (
 	"github.com/krixlion/dev_forum-lib/nulls"
 )
 
-func TestNewHandlerFunc(t *testing.T) {
+func TestNewHandler(t *testing.T) {
 	type args struct {
 		fn     HandlerEFunc
 		logger logging.Logger
@@ -89,7 +89,7 @@ func TestNewHandlerFunc(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			w := httptest.NewRecorder()
 
-			NewHandlerFunc(tt.args.fn, tt.args.logger).ServeHTTP(w, tt.args.r)
+			NewHandler(tt.args.fn, tt.args.logger).ServeHTTP(w, tt.args.r)
 
 			got := w.Result()
 			if got.StatusCode != tt.want.statusCode {

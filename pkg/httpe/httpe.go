@@ -9,12 +9,12 @@ import (
 
 type HandlerEFunc func(r *http.Request) (Response, error)
 
-// NewHandlerFunc wraps the given [HandlerEFunc] and converts it into a http.HandlerFunc.
+// NewHandler wraps the given [HandlerEFunc] and converts it into a http.Handler.
 // If the [HandlerEFunc] returns a non-nil error other than [HttpError], the handler
-// will respond to the request with a internal server error.If the error is a [HttpError], the
-// handler will respond with error's status and err message encoded to JSON. If the handlers
-// fails to send the response it will abort any further retries and log the error that caused the failure.
-func NewHandlerFunc(fn HandlerEFunc, logger logging.Logger) http.HandlerFunc {
+// will respond to the request with an internal server error. If the error is a [HttpError], the
+// handler will respond with error's status and err message encoded to JSON. If the handler
+// fails to send the response it will not attempt any further retries and log the error that caused the failure.
+func NewHandler(fn HandlerEFunc, logger logging.Logger) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		resp, err := fn(r)
 		if err != nil {

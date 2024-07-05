@@ -36,11 +36,11 @@ func MakeUserHandler(grpcClient pb.UserServiceClient, tracer trace.Tracer, logge
 }
 
 func (s UserHandler) registerRoutes() {
-	s.router.Method(http.MethodGet, "/{id}", otelhttp.NewHandler(httpe.NewHandlerFunc(s.GetUser, s.logger), "GetUser"))
-	s.router.Method(http.MethodGet, "/", otelhttp.NewHandler(httpe.NewHandlerFunc(s.GetUsers, s.logger), "GetUsers"))
-	s.router.Method(http.MethodPost, "/", otelhttp.NewHandler(httpe.NewHandlerFunc(s.CreateUser, s.logger), "CreateUser"))
-	s.router.Method(http.MethodPatch, "/{id}", otelhttp.NewHandler(httpe.NewHandlerFunc(s.UpdateUser, s.logger), "UpdateUser"))
-	s.router.Method(http.MethodDelete, "/{id}", otelhttp.NewHandler(httpe.NewHandlerFunc(s.DeleteUser, s.logger), "DeleteUser"))
+	s.router.Get("/{id}", otelhttp.NewHandler(httpe.NewHandler(s.GetUser, s.logger), "GetUser").ServeHTTP)
+	s.router.Get("/", otelhttp.NewHandler(httpe.NewHandler(s.GetUsers, s.logger), "GetUsers").ServeHTTP)
+	s.router.Post("/", otelhttp.NewHandler(httpe.NewHandler(s.CreateUser, s.logger), "CreateUser").ServeHTTP)
+	s.router.Patch("/{id}", otelhttp.NewHandler(httpe.NewHandler(s.UpdateUser, s.logger), "UpdateUser").ServeHTTP)
+	s.router.Delete("/{id}", otelhttp.NewHandler(httpe.NewHandler(s.DeleteUser, s.logger), "DeleteUser").ServeHTTP)
 }
 
 // ServeHTTP is called on each request before it's passed to the handler.
