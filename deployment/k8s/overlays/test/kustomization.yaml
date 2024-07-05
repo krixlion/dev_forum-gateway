@@ -3,6 +3,10 @@ resources:
 
 namespace: test
 
+images:
+  - name: krixlion/dev_forum-gateway
+    newTag: testing
+
 replicas:
   - name: gateway-d
     count: 1
