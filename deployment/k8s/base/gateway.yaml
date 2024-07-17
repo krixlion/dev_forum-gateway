@@ -10,10 +10,6 @@ spec:
       protocol: TCP
       port: 4000
       targetPort: http
-    - name: metrics
-      protocol: TCP
-      port: 2223
-      targetPort: metrics
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -43,8 +39,6 @@ spec:
           ports:
             - name: http
               containerPort: 80
-            - name: metrics
-              containerPort: 2223
           resources:
             limits:
               cpu: 20m

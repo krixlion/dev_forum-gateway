@@ -78,7 +78,7 @@ func main() {
 // getServiceDependencies is a Composition root.
 // Panics on any non-nil error.
 func getServiceDependencies(ctx context.Context, serviceName string, port int, isTLS bool) (service.Dependencies, error) {
-	shutdownTracing, err := tracing.InitProvider(ctx, serviceName)
+	shutdownTracing, err := tracing.InitProvider(ctx, serviceName, os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT"))
 	if err != nil {
 		return service.Dependencies{}, err
 	}
@@ -147,8 +147,7 @@ func getServiceDependencies(ctx context.Context, serviceName string, port int, i
 		Tracer:     tracer,
 		HttpServer: httpServer,
 		ShutdownFunc: func() error {
-			shutdownTracing()
-			return errors.Join(httpServer.Shutdown(ctx), userConn.Close(), articleConn.Close())
+			return errors.Join(httpServer.Shutdown(ctx), userConn.Close(), articleConn.Close(), shutdownTracing(), logger.Sync())
 		},
 	}, nil
 }
