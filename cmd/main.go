@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/krixlion/dev_forum-gateway/pkg/api"
@@ -19,8 +20,9 @@ import (
 	"github.com/krixlion/dev_forum-lib/logging"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 
+	articlepb "github.com/krixlion/dev_forum-article/pkg/grpc/v1"
 	"github.com/krixlion/dev_forum-lib/tracing"
-	pb "github.com/krixlion/dev_forum-user/pkg/grpc/v1"
+	userpb "github.com/krixlion/dev_forum-user/pkg/grpc/v1"
 	"go.opentelemetry.io/otel"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -134,8 +136,8 @@ func getServiceDependencies(ctx context.Context, serviceName string, port int, i
 	}
 
 	router := chi.NewRouter()
-	router.Mount("/articles", api.MakeArticleHandler(articleConn))
-	router.Mount("/users", api.MakeUserHandler(pb.NewUserServiceClient(userConn), logger))
+	router.Mount("/articles", api.MakeArticleHandler(articlepb.NewArticleServiceClient(articleConn), logger))
+	router.Mount("/users", api.MakeUserHandler(userpb.NewUserServiceClient(userConn), logger))
 
 	httpServer := &http.Server{
 		Handler:      router,
