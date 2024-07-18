@@ -138,8 +138,10 @@ func getServiceDependencies(ctx context.Context, serviceName string, port int, i
 	router.Mount("/users", api.MakeUserHandler(pb.NewUserServiceClient(userConn), logger))
 
 	httpServer := &http.Server{
-		Handler: router,
-		Addr:    fmt.Sprintf("0.0.0.0:%d", port),
+		Handler:      router,
+		Addr:         fmt.Sprintf("0.0.0.0:%d", port),
+		ReadTimeout:  time.Second * 30,
+		WriteTimeout: time.Second * 30,
 	}
 
 	return service.Dependencies{
