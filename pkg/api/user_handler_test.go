@@ -19,7 +19,6 @@ import (
 	"github.com/krixlion/dev_forum-user/pkg/grpc/mocks"
 	pb "github.com/krixlion/dev_forum-user/pkg/grpc/v1"
 	"github.com/stretchr/testify/mock"
-	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -73,7 +72,6 @@ func TestUserHandler_GetUser(t *testing.T) {
 	}
 	type fields struct {
 		grpcClient pb.UserServiceClient
-		tracer     trace.Tracer
 		logger     logging.Logger
 	}
 	tests := []struct {
@@ -87,7 +85,6 @@ func TestUserHandler_GetUser(t *testing.T) {
 			name: "Test returns user data along with status 200 on success",
 			fields: fields{
 				logger: nulls.NullLogger{},
-				tracer: nulls.NullTracer{},
 				grpcClient: func() pb.UserServiceClient {
 					m := mocks.NewUserClient()
 					v := &pb.GetUserResponse{User: &pb.User{
