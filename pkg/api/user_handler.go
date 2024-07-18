@@ -111,7 +111,7 @@ func (s UserHandler) GetUsers(r *http.Request) (httpe.Response, error) {
 }
 
 // CreateUser creates a user in the UserService.
-//   - Returns 201 if no error is encountered.
+//   - Returns 201 if no error is encountered. Response contains ID of created user.
 //   - Returns 400 when an error is encountered when decoding request's body.
 //   - Returns 500 on any other error.
 func (s UserHandler) CreateUser(r *http.Request) (httpe.Response, error) {
