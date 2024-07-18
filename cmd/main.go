@@ -135,7 +135,7 @@ func getServiceDependencies(ctx context.Context, serviceName string, port int, i
 
 	router := chi.NewRouter()
 	router.Mount("/articles", api.MakeArticleHandler(articleConn))
-	router.Mount("/users", api.MakeUserHandler(pb.NewUserServiceClient(userConn), tracer, logger))
+	router.Mount("/users", api.MakeUserHandler(pb.NewUserServiceClient(userConn), logger))
 
 	httpServer := &http.Server{
 		Handler: router,

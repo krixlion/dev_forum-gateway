@@ -21,15 +21,13 @@ type UserHandler struct {
 	router      chi.Router
 	userService pb.UserServiceClient
 	logger      logging.Logger
-	tracer      trace.Tracer
 }
 
-func MakeUserHandler(grpcClient pb.UserServiceClient, tracer trace.Tracer, logger logging.Logger) UserHandler {
+func MakeUserHandler(grpcClient pb.UserServiceClient, logger logging.Logger) UserHandler {
 	s := UserHandler{
 		router:      chi.NewRouter(),
 		userService: grpcClient,
 		logger:      logger,
-		tracer:      tracer,
 	}
 	s.registerRoutes()
 	return s

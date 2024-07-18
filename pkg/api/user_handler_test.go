@@ -37,7 +37,6 @@ func mustMarshalJSON(in any, t *testing.T) []byte {
 func TestMakeUserHandler(t *testing.T) {
 	type args struct {
 		grpcClient pb.UserServiceClient
-		tracer     trace.Tracer
 		logger     logging.Logger
 	}
 	tests := []struct {
@@ -50,19 +49,17 @@ func TestMakeUserHandler(t *testing.T) {
 			args: args{
 				grpcClient: mocks.NewUserClient(),
 				logger:     nulls.NullLogger{},
-				tracer:     nulls.NullTracer{},
 			},
 			want: UserHandler{
 				router:      chi.NewRouter(),
 				userService: mocks.NewUserClient(),
 				logger:      nulls.NullLogger{},
-				tracer:      nulls.NullTracer{},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := MakeUserHandler(tt.args.grpcClient, tt.args.tracer, tt.args.logger)
+			got := MakeUserHandler(tt.args.grpcClient, tt.args.logger)
 			if !cmp.Equal(got, tt.want, cmp.AllowUnexported(UserHandler{}), cmpopts.IgnoreUnexported(chi.Mux{}, mock.Mock{})) {
 				t.Errorf("MakeUserHandler():\n got = %v\n want = %v", got, tt.want)
 			}
@@ -136,7 +133,7 @@ func TestUserHandler_GetUser(t *testing.T) {
 			defer cancel()
 			tt.args.r = tt.args.r.WithContext(ctx)
 
-			handler := MakeUserHandler(tt.fields.grpcClient, tt.fields.tracer, tt.fields.logger)
+			handler := MakeUserHandler(tt.fields.grpcClient, tt.fields.logger)
 
 			got, err := handler.GetUser(tt.args.r)
 			if (err != nil) != tt.wantErr {
@@ -153,7 +150,6 @@ func TestUserHandler_GetUser(t *testing.T) {
 func TestUserHandler_GetUsers(t *testing.T) {
 	type fields struct {
 		userService pb.UserServiceClient
-		tracer      trace.Tracer
 		logger      logging.Logger
 	}
 	type args struct {
@@ -201,7 +197,7 @@ func TestUserHandler_GetUsers(t *testing.T) {
 			defer cancel()
 			tt.args.r = tt.args.r.WithContext(ctx)
 
-			s := MakeUserHandler(tt.fields.userService, tt.fields.tracer, tt.fields.logger)
+			s := MakeUserHandler(tt.fields.userService, tt.fields.logger)
 			got, err := s.GetUsers(tt.args.r)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("UserHandler.GetUsers():\n error = %v\n wantErr = %v", err, tt.wantErr)
@@ -217,7 +213,6 @@ func TestUserHandler_GetUsers(t *testing.T) {
 func TestUserHandler_CreateUser(t *testing.T) {
 	type fields struct {
 		userService pb.UserServiceClient
-		tracer      trace.Tracer
 		logger      logging.Logger
 	}
 	type args struct {
@@ -253,7 +248,7 @@ func TestUserHandler_CreateUser(t *testing.T) {
 			defer cancel()
 			tt.args.r = tt.args.r.WithContext(ctx)
 
-			s := MakeUserHandler(tt.fields.userService, tt.fields.tracer, tt.fields.logger)
+			s := MakeUserHandler(tt.fields.userService, tt.fields.logger)
 			got, err := s.CreateUser(tt.args.r)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("UserHandler.CreateUser():\n error = %v\n wantErr = %v", err, tt.wantErr)
@@ -269,7 +264,6 @@ func TestUserHandler_CreateUser(t *testing.T) {
 func TestUserHandler_UpdateUser(t *testing.T) {
 	type fields struct {
 		userService pb.UserServiceClient
-		tracer      trace.Tracer
 		logger      logging.Logger
 	}
 	type args struct {
@@ -317,7 +311,7 @@ func TestUserHandler_UpdateUser(t *testing.T) {
 			defer cancel()
 			tt.args.r = tt.args.r.WithContext(ctx)
 
-			s := MakeUserHandler(tt.fields.userService, tt.fields.tracer, tt.fields.logger)
+			s := MakeUserHandler(tt.fields.userService, tt.fields.logger)
 			got, err := s.UpdateUser(tt.args.r)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("UserHandler.UpdateUser():\n error = %v\n wantErr = %v", err, tt.wantErr)
@@ -333,7 +327,6 @@ func TestUserHandler_UpdateUser(t *testing.T) {
 func TestUserHandler_DeleteUser(t *testing.T) {
 	type fields struct {
 		userService pb.UserServiceClient
-		tracer      trace.Tracer
 		logger      logging.Logger
 	}
 	type args struct {
@@ -380,7 +373,7 @@ func TestUserHandler_DeleteUser(t *testing.T) {
 			defer cancel()
 			tt.args.r = tt.args.r.WithContext(ctx)
 
-			s := MakeUserHandler(tt.fields.userService, tt.fields.tracer, tt.fields.logger)
+			s := MakeUserHandler(tt.fields.userService, tt.fields.logger)
 			got, err := s.DeleteUser(tt.args.r)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("UserHandler.DeleteUser():\n error = %v\n wantErr = %v", err, tt.wantErr)
