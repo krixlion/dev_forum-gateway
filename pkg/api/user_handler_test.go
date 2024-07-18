@@ -226,7 +226,7 @@ func TestUserHandler_CreateUser(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Test users data and status 200 is returned on success",
+			name: "Test user ID and status 201 is returned on success",
 			fields: fields{
 				userService: func() pb.UserServiceClient {
 					m := mocks.NewUserClient()
@@ -277,7 +277,7 @@ func TestUserHandler_UpdateUser(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Test users data and status 200 is returned on success",
+			name: "Test status 200 is returned on success",
 			fields: fields{
 				userService: func() pb.UserServiceClient {
 					m := mocks.NewUserClient()
@@ -340,7 +340,7 @@ func TestUserHandler_DeleteUser(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Test users data and status 200 is returned on success",
+			name: "Test status 204 is returned on success",
 			fields: fields{
 				userService: func() pb.UserServiceClient {
 					m := mocks.NewUserClient()
