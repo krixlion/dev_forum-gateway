@@ -394,7 +394,7 @@ func Test_respond(t *testing.T) {
 			resp: NewResponse(http.StatusOK, nil),
 			want: result{
 				statusCode: http.StatusOK,
-				body:       "null\n",
+				body:       "{}\n",
 			},
 			wantErr: false,
 		},

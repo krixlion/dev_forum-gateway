@@ -57,8 +57,15 @@ type HttpResponse struct {
 	body   interface{}
 }
 
-func (resp HttpResponse) Status() int       { return resp.status }
-func (resp HttpResponse) Body() interface{} { return resp.body }
+func (resp HttpResponse) Status() int { return resp.status }
+
+func (resp HttpResponse) Body() interface{} {
+	if resp.body == nil {
+		// When encoded will result in "{}" instead of "null"
+		return struct{}{}
+	}
+	return resp.body
+}
 
 // HttpError represents any HTTP response indicating an error.
 // Use [NewError] to construct a new error.
