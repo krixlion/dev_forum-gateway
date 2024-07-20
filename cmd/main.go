@@ -126,6 +126,7 @@ func getServiceDependencies(ctx context.Context, serviceName string, port int, i
 	if err != nil {
 		return service.Dependencies{}, err
 	}
+	authClient := authpb.NewAuthServiceClient(authConn)
 
 	userConn, err := grpc.NewClient(os.Getenv("USER_SERVICE_SERVICE_HOST")+":"+os.Getenv("USER_SERVICE_SERVICE_PORT"),
 		grpc.WithTransportCredentials(creds),
@@ -147,12 +148,13 @@ func getServiceDependencies(ctx context.Context, serviceName string, port int, i
 		StreamRenewalInterval: time.Second * 10,
 		JobQueueSize:          1,
 	}
-	translator := translator.NewTranslator(authpb.NewAuthServiceClient(authConn), translatorConfig, translator.WithLogger(logger))
+	translator := translator.NewTranslator(authClient, translatorConfig, translator.WithLogger(logger))
 	go translator.Run(ctx)
 
 	router := chi.NewRouter()
 	router.Mount("/articles", api.MakeArticleHandler(articlepb.NewArticleServiceClient(articleConn), translator, logger))
 	router.Mount("/users", api.MakeUserHandler(userpb.NewUserServiceClient(userConn), translator, logger))
+	router.Mount("/auth", api.MakeAuthHandler(authClient, logger))
 
 	httpServer := &http.Server{
 		Handler:      router,
