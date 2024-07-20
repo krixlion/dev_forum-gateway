@@ -7,7 +7,10 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/krixlion/dev_forum-auth/pkg/tokens"
+	authware "github.com/krixlion/dev_forum-auth/pkg/tokens/middleware"
 	"github.com/krixlion/dev_forum-gateway/pkg/httpe"
+	"github.com/krixlion/dev_forum-gateway/pkg/middleware"
 	"github.com/krixlion/dev_forum-lib/logging"
 	"github.com/krixlion/dev_forum-lib/tracing"
 	pb "github.com/krixlion/dev_forum-user/pkg/grpc/v1"
@@ -23,22 +26,27 @@ type UserHandler struct {
 	logger      logging.Logger
 }
 
-func MakeUserHandler(grpcClient pb.UserServiceClient, logger logging.Logger) UserHandler {
+func MakeUserHandler(grpcClient pb.UserServiceClient, translator tokens.Translator, logger logging.Logger) UserHandler {
 	s := UserHandler{
 		router:      chi.NewRouter(),
 		userService: grpcClient,
 		logger:      logger,
 	}
-	s.registerRoutes()
+	s.registerRoutes(translator)
 	return s
 }
 
-func (s UserHandler) registerRoutes() {
-	s.router.Get("/{id}", otelhttp.NewHandler(httpe.NewHandler(s.GetUser, s.logger), "GetUser").ServeHTTP)
-	s.router.Get("/", otelhttp.NewHandler(httpe.NewHandler(s.GetUsers, s.logger), "GetUsers").ServeHTTP)
-	s.router.Post("/", otelhttp.NewHandler(httpe.NewHandler(s.CreateUser, s.logger), "CreateUser").ServeHTTP)
-	s.router.Patch("/{id}", otelhttp.NewHandler(httpe.NewHandler(s.UpdateUser, s.logger), "UpdateUser").ServeHTTP)
-	s.router.Delete("/{id}", otelhttp.NewHandler(httpe.NewHandler(s.DeleteUser, s.logger), "DeleteUser").ServeHTTP)
+func (s UserHandler) registerRoutes(translator tokens.Translator) {
+	s.router.With(otelhttp.NewMiddleware("GetUser")).Get("/{id}", httpe.NewHandler(s.GetUser, s.logger).ServeHTTP)
+	s.router.With(otelhttp.NewMiddleware("GetUsers")).Get("/", httpe.NewHandler(s.GetUsers, s.logger).ServeHTTP)
+	s.router.With(otelhttp.NewMiddleware("CreateUser")).Post("/", httpe.NewHandler(s.CreateUser, s.logger).ServeHTTP)
+
+	s.router.Group(func(r chi.Router) {
+		r.Use(authware.Auth(translator, s.logger))
+
+		r.With(otelhttp.NewMiddleware("UpdateUser")).Patch("/{id}", httpe.NewHandler(s.UpdateUser, s.logger).ServeHTTP)
+		r.With(otelhttp.NewMiddleware("DeleteUser")).Delete("/{id}", httpe.NewHandler(s.DeleteUser, s.logger).ServeHTTP)
+	})
 }
 
 // ServeHTTP is called on each request before it's passed to the handler.
@@ -143,6 +151,13 @@ func (s UserHandler) UpdateUser(r *http.Request) (httpe.Response, error) {
 	ctx := r.Context()
 	span := trace.SpanFromContext(ctx)
 
+	ctx, err := middleware.ConvertCtxMetadata(ctx)
+	if err != nil {
+		tracing.SetSpanErr(span, err)
+		s.logger.Log(ctx, "failed convert context metadata", "transport", "http", "err", err)
+		return nil, httpe.NewGenericError(http.StatusInternalServerError)
+	}
+
 	userId := r.PathValue("id")
 	if errMsg := "user not found"; userId == "" {
 		tracing.SetSpanErr(span, errors.New(errMsg))
@@ -173,6 +188,13 @@ func (s UserHandler) UpdateUser(r *http.Request) (httpe.Response, error) {
 func (s UserHandler) DeleteUser(r *http.Request) (httpe.Response, error) {
 	ctx := r.Context()
 	span := trace.SpanFromContext(ctx)
+
+	ctx, err := middleware.ConvertCtxMetadata(ctx)
+	if err != nil {
+		tracing.SetSpanErr(span, err)
+		s.logger.Log(ctx, "failed convert context metadata", "transport", "http", "err", err)
+		return nil, httpe.NewGenericError(http.StatusInternalServerError)
+	}
 
 	userId := r.PathValue("id")
 	if errMsg := "user not found"; userId == "" {

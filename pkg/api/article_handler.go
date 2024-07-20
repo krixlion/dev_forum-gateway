@@ -8,7 +8,9 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	pb "github.com/krixlion/dev_forum-article/pkg/grpc/v1"
+	"github.com/krixlion/dev_forum-auth/pkg/tokens"
 	"github.com/krixlion/dev_forum-gateway/pkg/httpe"
+	"github.com/krixlion/dev_forum-gateway/pkg/middleware"
 	"github.com/krixlion/dev_forum-lib/logging"
 	"github.com/krixlion/dev_forum-lib/tracing"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
@@ -23,22 +25,27 @@ type ArticleHandler struct {
 	logger         logging.Logger
 }
 
-func MakeArticleHandler(grpcClient pb.ArticleServiceClient, logger logging.Logger) ArticleHandler {
+func MakeArticleHandler(grpcClient pb.ArticleServiceClient, translator tokens.Translator, logger logging.Logger) ArticleHandler {
 	s := ArticleHandler{
 		router:         chi.NewRouter(),
 		articleService: grpcClient,
 		logger:         logger,
 	}
-	s.registerRoutes()
+	s.registerRoutes(translator)
 	return s
 }
 
-func (s ArticleHandler) registerRoutes() {
-	s.router.Get("/{id}", otelhttp.NewHandler(httpe.NewHandler(s.GetArticle, s.logger), "GetArticle").ServeHTTP)
-	s.router.Get("/", otelhttp.NewHandler(httpe.NewHandler(s.GetArticles, s.logger), "GetArticles").ServeHTTP)
-	s.router.Post("/", otelhttp.NewHandler(httpe.NewHandler(s.CreateArticle, s.logger), "CreateArticle").ServeHTTP)
-	s.router.Patch("/{id}", otelhttp.NewHandler(httpe.NewHandler(s.UpdateArticle, s.logger), "UpdateArticle").ServeHTTP)
-	s.router.Delete("/{id}", otelhttp.NewHandler(httpe.NewHandler(s.DeleteArticle, s.logger), "DeleteArticle").ServeHTTP)
+func (s ArticleHandler) registerRoutes(translator tokens.Translator) {
+	s.router.With(otelhttp.NewMiddleware("GetArticle")).Get("/{id}", httpe.NewHandler(s.GetArticle, s.logger).ServeHTTP)
+	s.router.With(otelhttp.NewMiddleware("GetArticles")).Get("/", httpe.NewHandler(s.GetArticles, s.logger).ServeHTTP)
+
+	s.router.Group(func(r chi.Router) {
+		r.Use(middleware.Auth(translator, s.logger))
+
+		r.With(otelhttp.NewMiddleware("CreateArticle")).Post("/", httpe.NewHandler(s.CreateArticle, s.logger).ServeHTTP)
+		r.With(otelhttp.NewMiddleware("UpdateArticle")).Patch("/{id}", httpe.NewHandler(s.UpdateArticle, s.logger).ServeHTTP)
+		r.With(otelhttp.NewMiddleware("DeleteArticle")).Delete("/{id}", httpe.NewHandler(s.DeleteArticle, s.logger).ServeHTTP)
+	})
 }
 
 func (s ArticleHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -116,6 +123,13 @@ func (s ArticleHandler) CreateArticle(r *http.Request) (httpe.Response, error) {
 	ctx := r.Context()
 	span := trace.SpanFromContext(ctx)
 
+	ctx, err := middleware.ConvertCtxMetadata(ctx)
+	if err != nil {
+		tracing.SetSpanErr(span, err)
+		s.logger.Log(ctx, "failed convert context metadata", "transport", "http", "err", err)
+		return nil, httpe.NewGenericError(http.StatusInternalServerError)
+	}
+
 	article := &pb.Article{}
 	if err := json.NewDecoder(r.Body).Decode(article); err != nil {
 		tracing.SetSpanErr(span, err)
@@ -140,6 +154,13 @@ func (s ArticleHandler) CreateArticle(r *http.Request) (httpe.Response, error) {
 func (s ArticleHandler) UpdateArticle(r *http.Request) (httpe.Response, error) {
 	ctx := r.Context()
 	span := trace.SpanFromContext(ctx)
+
+	ctx, err := middleware.ConvertCtxMetadata(ctx)
+	if err != nil {
+		tracing.SetSpanErr(span, err)
+		s.logger.Log(ctx, "failed convert context metadata", "transport", "http", "err", err)
+		return nil, httpe.NewGenericError(http.StatusInternalServerError)
+	}
 
 	articleId := r.PathValue("id")
 	if errMsg := "article not found"; articleId == "" {
@@ -171,6 +192,13 @@ func (s ArticleHandler) UpdateArticle(r *http.Request) (httpe.Response, error) {
 func (s ArticleHandler) DeleteArticle(r *http.Request) (httpe.Response, error) {
 	ctx := r.Context()
 	span := trace.SpanFromContext(ctx)
+
+	ctx, err := middleware.ConvertCtxMetadata(ctx)
+	if err != nil {
+		tracing.SetSpanErr(span, err)
+		s.logger.Log(ctx, "failed convert context metadata", "transport", "http", "err", err)
+		return nil, httpe.NewGenericError(http.StatusInternalServerError)
+	}
 
 	articleId := r.PathValue("id")
 	if errMsg := "article not found"; articleId == "" {

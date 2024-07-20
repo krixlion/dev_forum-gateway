@@ -13,6 +13,8 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	authpb "github.com/krixlion/dev_forum-auth/pkg/grpc/v1"
+	"github.com/krixlion/dev_forum-auth/pkg/tokens/translator"
 	"github.com/krixlion/dev_forum-gateway/pkg/api"
 	"github.com/krixlion/dev_forum-gateway/pkg/service"
 	"github.com/krixlion/dev_forum-lib/cert"
@@ -92,8 +94,7 @@ func getServiceDependencies(ctx context.Context, serviceName string, port int, i
 		return service.Dependencies{}, err
 	}
 
-	var userCreds = insecure.NewCredentials()
-	var articleCreds = insecure.NewCredentials()
+	var creds = insecure.NewCredentials()
 	if isTLS {
 		caCertPool, err := cert.LoadCaPool(os.Getenv("TLS_CA_PATH"))
 		if err != nil {
@@ -115,12 +116,19 @@ func getServiceDependencies(ctx context.Context, serviceName string, port int, i
 			Certificates: []tls.Certificate{clientCert, serverCert},
 		}
 
-		userCreds = credentials.NewTLS(tlsConfig)
-		articleCreds = credentials.NewTLS(tlsConfig)
+		creds = credentials.NewTLS(tlsConfig)
+	}
+
+	authConn, err := grpc.NewClient(os.Getenv("AUTH_SERVICE_SERVICE_HOST")+":"+os.Getenv("AUTH_SERVICE_SERVICE_PORT"),
+		grpc.WithTransportCredentials(creds),
+		grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
+	)
+	if err != nil {
+		return service.Dependencies{}, err
 	}
 
 	userConn, err := grpc.NewClient(os.Getenv("USER_SERVICE_SERVICE_HOST")+":"+os.Getenv("USER_SERVICE_SERVICE_PORT"),
-		grpc.WithTransportCredentials(userCreds),
+		grpc.WithTransportCredentials(creds),
 		grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
 	)
 	if err != nil {
@@ -128,16 +136,23 @@ func getServiceDependencies(ctx context.Context, serviceName string, port int, i
 	}
 
 	articleConn, err := grpc.NewClient(os.Getenv("ARTICLE_SERVICE_SERVICE_HOST")+":"+os.Getenv("ARTICLE_SERVICE_SERVICE_PORT"),
-		grpc.WithTransportCredentials(articleCreds),
+		grpc.WithTransportCredentials(creds),
 		grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
 	)
 	if err != nil {
 		return service.Dependencies{}, err
 	}
 
+	translatorConfig := translator.Config{
+		StreamRenewalInterval: time.Second * 10,
+		JobQueueSize:          1,
+	}
+	translator := translator.NewTranslator(authpb.NewAuthServiceClient(authConn), translatorConfig, translator.WithLogger(logger))
+	go translator.Run(ctx)
+
 	router := chi.NewRouter()
-	router.Mount("/articles", api.MakeArticleHandler(articlepb.NewArticleServiceClient(articleConn), logger))
-	router.Mount("/users", api.MakeUserHandler(userpb.NewUserServiceClient(userConn), logger))
+	router.Mount("/articles", api.MakeArticleHandler(articlepb.NewArticleServiceClient(articleConn), translator, logger))
+	router.Mount("/users", api.MakeUserHandler(userpb.NewUserServiceClient(userConn), translator, logger))
 
 	httpServer := &http.Server{
 		Handler:      router,

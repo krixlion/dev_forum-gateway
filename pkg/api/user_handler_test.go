@@ -13,7 +13,9 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/krixlion/dev_forum-auth/pkg/tokens/tokensmocks"
 	"github.com/krixlion/dev_forum-gateway/pkg/httpe"
+	"github.com/krixlion/dev_forum-gateway/pkg/middleware"
 	"github.com/krixlion/dev_forum-lib/logging"
 	"github.com/krixlion/dev_forum-lib/nulls"
 	"github.com/krixlion/dev_forum-user/pkg/grpc/mocks"
@@ -58,7 +60,7 @@ func TestMakeUserHandler(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := MakeUserHandler(tt.args.grpcClient, tt.args.logger)
+			got := MakeUserHandler(tt.args.grpcClient, tokensmocks.NewTokenTranslator(), tt.args.logger)
 			if !cmp.Equal(got, tt.want, cmp.AllowUnexported(UserHandler{}), cmpopts.IgnoreUnexported(chi.Mux{}, mock.Mock{})) {
 				t.Errorf("MakeUserHandler():\n got = %v\n want = %v", got, tt.want)
 			}
@@ -72,7 +74,6 @@ func TestUserHandler_GetUser(t *testing.T) {
 	}
 	type fields struct {
 		grpcClient pb.UserServiceClient
-		logger     logging.Logger
 	}
 	tests := []struct {
 		name    string
@@ -82,9 +83,8 @@ func TestUserHandler_GetUser(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Test returns user data along with status 200 on success",
+			name: "Test returns user data along with status 200 on valid request with no bearer token",
 			fields: fields{
-				logger: nulls.NullLogger{},
 				grpcClient: func() pb.UserServiceClient {
 					m := mocks.NewUserClient()
 					v := &pb.GetUserResponse{User: &pb.User{
@@ -126,11 +126,11 @@ func TestUserHandler_GetUser(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+			ctx, cancel := context.WithTimeout(tt.args.r.Context(), time.Second)
 			defer cancel()
 			tt.args.r = tt.args.r.WithContext(ctx)
 
-			handler := MakeUserHandler(tt.fields.grpcClient, tt.fields.logger)
+			handler := MakeUserHandler(tt.fields.grpcClient, tokensmocks.NewTokenTranslator(), nulls.NullLogger{})
 
 			got, err := handler.GetUser(tt.args.r)
 			if (err != nil) != tt.wantErr {
@@ -147,7 +147,6 @@ func TestUserHandler_GetUser(t *testing.T) {
 func TestUserHandler_GetUsers(t *testing.T) {
 	type fields struct {
 		userService pb.UserServiceClient
-		logger      logging.Logger
 	}
 	type args struct {
 		r *http.Request
@@ -160,7 +159,7 @@ func TestUserHandler_GetUsers(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Test returns users data and status 200 on success",
+			name: "Test returns users data and status 200 on valid request with no bearer token",
 			fields: fields{
 				userService: func() pb.UserServiceClient {
 					ms := mocks.NewUserStreamClient()
@@ -172,7 +171,6 @@ func TestUserHandler_GetUsers(t *testing.T) {
 					m.On("GetStream", mock.Anything, &pb.GetUsersRequest{Offset: "test-offset", Limit: "test-limit", Filter: "test-filter"}, mock.AnythingOfType("[]grpc.CallOption")).Return(ms, nil).Once()
 					return m
 				}(),
-				logger: nulls.NullLogger{},
 			},
 			args: args{
 				r: httptest.NewRequest("GET", "/?filter=test-filter&offset=test-offset&limit=test-limit", nil),
@@ -190,11 +188,11 @@ func TestUserHandler_GetUsers(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+			ctx, cancel := context.WithTimeout(tt.args.r.Context(), time.Second)
 			defer cancel()
 			tt.args.r = tt.args.r.WithContext(ctx)
 
-			s := MakeUserHandler(tt.fields.userService, tt.fields.logger)
+			s := MakeUserHandler(tt.fields.userService, tokensmocks.NewTokenTranslator(), nulls.NullLogger{})
 			got, err := s.GetUsers(tt.args.r)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("UserHandler.GetUsers():\n error = %v\n wantErr = %v", err, tt.wantErr)
@@ -210,7 +208,6 @@ func TestUserHandler_GetUsers(t *testing.T) {
 func TestUserHandler_CreateUser(t *testing.T) {
 	type fields struct {
 		userService pb.UserServiceClient
-		logger      logging.Logger
 	}
 	type args struct {
 		r *http.Request
@@ -223,14 +220,13 @@ func TestUserHandler_CreateUser(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Test user ID and status 201 is returned on success",
+			name: "Test user ID and status 201 is returned on valid request with no bearer token",
 			fields: fields{
 				userService: func() pb.UserServiceClient {
 					m := mocks.NewUserClient()
 					m.On("Create", mock.Anything, &pb.CreateUserRequest{User: &pb.User{Id: "test-id"}}, mock.AnythingOfType("[]grpc.CallOption")).Return(&pb.CreateUserResponse{Id: "test-id"}, nil).Once()
 					return m
 				}(),
-				logger: nulls.NullLogger{},
 			},
 			args: args{
 				r: httptest.NewRequest("POST", "/", bytes.NewReader(mustMarshalJSON(&pb.User{Id: "test-id"}, t))),
@@ -241,11 +237,11 @@ func TestUserHandler_CreateUser(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+			ctx, cancel := context.WithTimeout(tt.args.r.Context(), time.Second)
 			defer cancel()
 			tt.args.r = tt.args.r.WithContext(ctx)
 
-			s := MakeUserHandler(tt.fields.userService, tt.fields.logger)
+			s := MakeUserHandler(tt.fields.userService, tokensmocks.NewTokenTranslator(), nulls.NullLogger{})
 			got, err := s.CreateUser(tt.args.r)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("UserHandler.CreateUser():\n error = %v\n wantErr = %v", err, tt.wantErr)
@@ -261,7 +257,6 @@ func TestUserHandler_CreateUser(t *testing.T) {
 func TestUserHandler_UpdateUser(t *testing.T) {
 	type fields struct {
 		userService pb.UserServiceClient
-		logger      logging.Logger
 	}
 	type args struct {
 		r *http.Request
@@ -281,14 +276,13 @@ func TestUserHandler_UpdateUser(t *testing.T) {
 					m.On("Update", mock.Anything, &pb.UpdateUserRequest{User: &pb.User{Id: "test-id", Name: "test-name"}}, mock.AnythingOfType("[]grpc.CallOption")).Return(&emptypb.Empty{}, nil).Once()
 					return m
 				}(),
-				logger: nulls.NullLogger{},
 			},
 			args: args{
 				r: func() *http.Request {
 					v := mustMarshalJSON(&pb.User{Id: "test-id", Name: "test-name"}, t)
 					r := httptest.NewRequest("PATCH", "/", bytes.NewReader(v))
 					r.SetPathValue("id", "test-id")
-					return r
+					return r.WithContext(context.WithValue(r.Context(), middleware.CtxTokenKey{}, "test-token"))
 				}(),
 			},
 			want:    httpe.NewResponse(http.StatusOK, nil),
@@ -297,6 +291,16 @@ func TestUserHandler_UpdateUser(t *testing.T) {
 		{
 			name: "Test returns 404 on missing user ID",
 			args: args{
+				r: func() *http.Request {
+					r := httptest.NewRequest("PATCH", "/", nil)
+					return r.WithContext(context.WithValue(r.Context(), middleware.CtxTokenKey{}, "test-token"))
+				}(),
+			},
+			wantErr: true,
+		},
+		{
+			name: "Test returns 500 error on missing bearer token in request context",
+			args: args{
 				r: httptest.NewRequest("PATCH", "/", nil),
 			},
 			wantErr: true,
@@ -304,11 +308,11 @@ func TestUserHandler_UpdateUser(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+			ctx, cancel := context.WithTimeout(tt.args.r.Context(), time.Second)
 			defer cancel()
 			tt.args.r = tt.args.r.WithContext(ctx)
 
-			s := MakeUserHandler(tt.fields.userService, tt.fields.logger)
+			s := MakeUserHandler(tt.fields.userService, tokensmocks.NewTokenTranslator(), nulls.NullLogger{})
 			got, err := s.UpdateUser(tt.args.r)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("UserHandler.UpdateUser():\n error = %v\n wantErr = %v", err, tt.wantErr)
@@ -324,7 +328,6 @@ func TestUserHandler_UpdateUser(t *testing.T) {
 func TestUserHandler_DeleteUser(t *testing.T) {
 	type fields struct {
 		userService pb.UserServiceClient
-		logger      logging.Logger
 	}
 	type args struct {
 		r *http.Request
@@ -344,13 +347,12 @@ func TestUserHandler_DeleteUser(t *testing.T) {
 					m.On("Delete", mock.Anything, &pb.DeleteUserRequest{Id: "test-id"}, mock.AnythingOfType("[]grpc.CallOption")).Return(&emptypb.Empty{}, nil).Once()
 					return m
 				}(),
-				logger: nulls.NullLogger{},
 			},
 			args: args{
 				r: func() *http.Request {
 					r := httptest.NewRequest("DELETE", "/", nil)
 					r.SetPathValue("id", "test-id")
-					return r
+					return r.WithContext(context.WithValue(r.Context(), middleware.CtxTokenKey{}, "test-token"))
 				}(),
 			},
 			want:    httpe.NewResponse(http.StatusNoContent, nil),
@@ -359,6 +361,16 @@ func TestUserHandler_DeleteUser(t *testing.T) {
 		{
 			name: "Test returns 404 on missing user ID",
 			args: args{
+				r: func() *http.Request {
+					r := httptest.NewRequest("DELETE", "/", nil)
+					return r.WithContext(context.WithValue(r.Context(), middleware.CtxTokenKey{}, "test-token"))
+				}(),
+			},
+			wantErr: true,
+		},
+		{
+			name: "Test returns 500 error on missing bearer token in request context",
+			args: args{
 				r: httptest.NewRequest("DELETE", "/", nil),
 			},
 			wantErr: true,
@@ -366,11 +378,11 @@ func TestUserHandler_DeleteUser(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+			ctx, cancel := context.WithTimeout(tt.args.r.Context(), time.Second)
 			defer cancel()
 			tt.args.r = tt.args.r.WithContext(ctx)
 
-			s := MakeUserHandler(tt.fields.userService, tt.fields.logger)
+			s := MakeUserHandler(tt.fields.userService, tokensmocks.NewTokenTranslator(), nulls.NullLogger{})
 			got, err := s.DeleteUser(tt.args.r)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("UserHandler.DeleteUser():\n error = %v\n wantErr = %v", err, tt.wantErr)

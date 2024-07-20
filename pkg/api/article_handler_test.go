@@ -14,7 +14,9 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/krixlion/dev_forum-article/pkg/grpc/mocks"
 	pb "github.com/krixlion/dev_forum-article/pkg/grpc/v1"
+	"github.com/krixlion/dev_forum-auth/pkg/tokens/tokensmocks"
 	"github.com/krixlion/dev_forum-gateway/pkg/httpe"
+	"github.com/krixlion/dev_forum-gateway/pkg/middleware"
 	"github.com/krixlion/dev_forum-lib/logging"
 	"github.com/krixlion/dev_forum-lib/nulls"
 	"github.com/stretchr/testify/mock"
@@ -47,7 +49,7 @@ func TestMakeArticleHandler(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := MakeArticleHandler(tt.args.grpcClient, tt.args.logger)
+			got := MakeArticleHandler(tt.args.grpcClient, tokensmocks.NewTokenTranslator(), tt.args.logger)
 			if !cmp.Equal(got, tt.want, cmp.AllowUnexported(ArticleHandler{}), cmpopts.IgnoreUnexported(chi.Mux{}, mock.Mock{})) {
 				t.Errorf("MakeArticleHandler():\n got = %v\n want = %v", got, tt.want)
 			}
@@ -58,7 +60,6 @@ func TestMakeArticleHandler(t *testing.T) {
 func TestArticleHandler_GetArticle(t *testing.T) {
 	type fields struct {
 		articleService pb.ArticleServiceClient
-		logger         logging.Logger
 	}
 	type args struct {
 		r *http.Request
@@ -71,9 +72,8 @@ func TestArticleHandler_GetArticle(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Test returns article along with status 200 on success",
+			name: "Test returns article along with status 200 on valid request with no bearer token",
 			fields: fields{
-				logger: nulls.NullLogger{},
 				articleService: func() pb.ArticleServiceClient {
 					m := mocks.NewArticleClient()
 					v := &pb.GetArticleResponse{Article: &pb.Article{
@@ -111,11 +111,11 @@ func TestArticleHandler_GetArticle(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+			ctx, cancel := context.WithTimeout(tt.args.r.Context(), time.Second)
 			defer cancel()
 			tt.args.r = tt.args.r.WithContext(ctx)
 
-			handler := MakeArticleHandler(tt.fields.articleService, tt.fields.logger)
+			handler := MakeArticleHandler(tt.fields.articleService, tokensmocks.NewTokenTranslator(), nulls.NullLogger{})
 
 			got, err := handler.GetArticle(tt.args.r)
 			if (err != nil) != tt.wantErr {
@@ -132,7 +132,6 @@ func TestArticleHandler_GetArticle(t *testing.T) {
 func TestArticleHandler_GetArticles(t *testing.T) {
 	type fields struct {
 		articleService pb.ArticleServiceClient
-		logger         logging.Logger
 	}
 	type args struct {
 		r *http.Request
@@ -145,7 +144,7 @@ func TestArticleHandler_GetArticles(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Test articles and status 200 is returned on success",
+			name: "Test articles and status 200 is returned on valid request with no bearer token",
 			fields: fields{
 				articleService: func() pb.ArticleServiceClient {
 					ms := mocks.NewArticleStreamClient()
@@ -157,7 +156,6 @@ func TestArticleHandler_GetArticles(t *testing.T) {
 					m.On("GetStream", mock.Anything, &pb.GetArticlesRequest{Offset: "test-offset", Limit: "test-limit"}, mock.AnythingOfType("[]grpc.CallOption")).Return(ms, nil).Once()
 					return m
 				}(),
-				logger: nulls.NullLogger{},
 			},
 			args: args{
 				r: func() *http.Request {
@@ -178,11 +176,11 @@ func TestArticleHandler_GetArticles(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+			ctx, cancel := context.WithTimeout(tt.args.r.Context(), time.Second)
 			defer cancel()
 			tt.args.r = tt.args.r.WithContext(ctx)
 
-			s := MakeArticleHandler(tt.fields.articleService, tt.fields.logger)
+			s := MakeArticleHandler(tt.fields.articleService, tokensmocks.NewTokenTranslator(), nulls.NullLogger{})
 			got, err := s.GetArticles(tt.args.r)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ArticleHandler.GetArticles():\n error = %v\n wantErr = %v", err, tt.wantErr)
@@ -198,7 +196,6 @@ func TestArticleHandler_GetArticles(t *testing.T) {
 func TestArticleHandler_CreateArticle(t *testing.T) {
 	type fields struct {
 		articleService pb.ArticleServiceClient
-		logger         logging.Logger
 	}
 	type args struct {
 		r *http.Request
@@ -220,22 +217,31 @@ func TestArticleHandler_CreateArticle(t *testing.T) {
 						Once()
 					return m
 				}(),
-				logger: nulls.NullLogger{},
 			},
 			args: args{
-				r: httptest.NewRequest("POST", "/", strings.NewReader(`{"id":"test-id","title":"test-title"}`)),
+				r: func() *http.Request {
+					r := httptest.NewRequest("POST", "/", strings.NewReader(`{"id":"test-id","title":"test-title"}`))
+					return r.WithContext(context.WithValue(r.Context(), middleware.CtxTokenKey{}, "test-token"))
+				}(),
 			},
 			want:    httpe.NewResponse(http.StatusCreated, map[string]string{"id": "test-id"}),
 			wantErr: false,
 		},
+		{
+			name: "Test returns 500 error on missing bearer token in request context",
+			args: args{
+				r: httptest.NewRequest("POST", "/", nil),
+			},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+			ctx, cancel := context.WithTimeout(tt.args.r.Context(), time.Second)
 			defer cancel()
 			tt.args.r = tt.args.r.WithContext(ctx)
 
-			s := MakeArticleHandler(tt.fields.articleService, tt.fields.logger)
+			s := MakeArticleHandler(tt.fields.articleService, tokensmocks.NewTokenTranslator(), nulls.NullLogger{})
 			got, err := s.CreateArticle(tt.args.r)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ArticleHandler.CreateArticle():\n error = %v\n wantErr = %v", err, tt.wantErr)
@@ -251,7 +257,6 @@ func TestArticleHandler_CreateArticle(t *testing.T) {
 func TestArticleHandler_UpdateArticle(t *testing.T) {
 	type fields struct {
 		articleService pb.ArticleServiceClient
-		logger         logging.Logger
 	}
 	type args struct {
 		r *http.Request
@@ -271,13 +276,12 @@ func TestArticleHandler_UpdateArticle(t *testing.T) {
 					m.On("Update", mock.Anything, &pb.UpdateArticleRequest{Article: &pb.Article{Id: "test-id", Title: "test-title"}}, mock.AnythingOfType("[]grpc.CallOption")).Return(&emptypb.Empty{}, nil).Once()
 					return m
 				}(),
-				logger: nulls.NullLogger{},
 			},
 			args: args{
 				r: func() *http.Request {
 					r := httptest.NewRequest("PATCH", "/", strings.NewReader(`{"id":"test-id","title":"test-title"}`))
 					r.SetPathValue("id", "test-id")
-					return r
+					return r.WithContext(context.WithValue(r.Context(), middleware.CtxTokenKey{}, "test-token"))
 				}(),
 			},
 			want:    httpe.NewResponse(http.StatusOK, nil),
@@ -286,6 +290,16 @@ func TestArticleHandler_UpdateArticle(t *testing.T) {
 		{
 			name: "Test returns 404 error on missing article ID in path",
 			args: args{
+				r: func() *http.Request {
+					r := httptest.NewRequest("PATCH", "/", nil)
+					return r.WithContext(context.WithValue(r.Context(), middleware.CtxTokenKey{}, "test-token"))
+				}(),
+			},
+			wantErr: true,
+		},
+		{
+			name: "Test returns 500 error on missing bearer token in request context",
+			args: args{
 				r: httptest.NewRequest("PATCH", "/", nil),
 			},
 			wantErr: true,
@@ -293,11 +307,12 @@ func TestArticleHandler_UpdateArticle(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+			ctx, cancel := context.WithTimeout(tt.args.r.Context(), time.Second)
 			defer cancel()
+
 			tt.args.r = tt.args.r.WithContext(ctx)
 
-			s := MakeArticleHandler(tt.fields.articleService, tt.fields.logger)
+			s := MakeArticleHandler(tt.fields.articleService, tokensmocks.NewTokenTranslator(), nulls.NullLogger{})
 			got, err := s.UpdateArticle(tt.args.r)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ArticleHandler.UpdateArticle():\n error = %v\n wantErr = %v", err, tt.wantErr)
@@ -313,7 +328,6 @@ func TestArticleHandler_UpdateArticle(t *testing.T) {
 func TestArticleHandler_DeleteArticle(t *testing.T) {
 	type fields struct {
 		articleService pb.ArticleServiceClient
-		logger         logging.Logger
 	}
 	type args struct {
 		r *http.Request
@@ -333,13 +347,12 @@ func TestArticleHandler_DeleteArticle(t *testing.T) {
 					m.On("Delete", mock.Anything, &pb.DeleteArticleRequest{Id: "test-id"}, mock.AnythingOfType("[]grpc.CallOption")).Return(&emptypb.Empty{}, nil).Once()
 					return m
 				}(),
-				logger: nulls.NullLogger{},
 			},
 			args: args{
 				r: func() *http.Request {
 					r := httptest.NewRequest("DELETE", "/", nil)
 					r.SetPathValue("id", "test-id")
-					return r
+					return r.WithContext(context.WithValue(r.Context(), middleware.CtxTokenKey{}, "test-token"))
 				}(),
 			},
 			want:    httpe.NewResponse(http.StatusNoContent, nil),
@@ -348,6 +361,16 @@ func TestArticleHandler_DeleteArticle(t *testing.T) {
 		{
 			name: "Test returns 404 on missing article ID in path",
 			args: args{
+				r: func() *http.Request {
+					r := httptest.NewRequest("DELETE", "/", nil)
+					return r.WithContext(context.WithValue(r.Context(), middleware.CtxTokenKey{}, "test-token"))
+				}(),
+			},
+			wantErr: true,
+		},
+		{
+			name: "Test returns 500 error on missing bearer token in request context",
+			args: args{
 				r: httptest.NewRequest("DELETE", "/", nil),
 			},
 			wantErr: true,
@@ -355,11 +378,11 @@ func TestArticleHandler_DeleteArticle(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+			ctx, cancel := context.WithTimeout(tt.args.r.Context(), time.Second)
 			defer cancel()
 			tt.args.r = tt.args.r.WithContext(ctx)
 
-			s := MakeArticleHandler(tt.fields.articleService, tt.fields.logger)
+			s := MakeArticleHandler(tt.fields.articleService, tokensmocks.NewTokenTranslator(), nulls.NullLogger{})
 			got, err := s.DeleteArticle(tt.args.r)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ArticleHandler.DeleteArticle():\n error = %v\n wantErr = %v", err, tt.wantErr)
