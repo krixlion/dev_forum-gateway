@@ -15,7 +15,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	authpb "github.com/krixlion/dev_forum-auth/pkg/grpc/v1"
 	"github.com/krixlion/dev_forum-auth/pkg/tokens/translator"
-	"github.com/krixlion/dev_forum-gateway/pkg/api"
+	"github.com/krixlion/dev_forum-gateway/pkg/api/v1"
 	"github.com/krixlion/dev_forum-gateway/pkg/service"
 	"github.com/krixlion/dev_forum-lib/cert"
 	"github.com/krixlion/dev_forum-lib/env"
