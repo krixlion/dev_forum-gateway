@@ -6,7 +6,7 @@ require (
 	github.com/go-chi/chi/v5 v5.0.14
 	github.com/google/go-cmp v0.6.0
 	github.com/krixlion/dev_forum-article v0.0.0-20240718151546-68c836809d32
-	github.com/krixlion/dev_forum-auth v0.0.0-20240720002602-109c60438c07
+	github.com/krixlion/dev_forum-auth v0.0.0-20240721154730-257b9efbe835
 	github.com/krixlion/dev_forum-lib v0.0.0-20240721150408-31ba7bed3bf6
 	github.com/krixlion/dev_forum-user v0.0.0-20240623144814-63dd578d52e2
 	github.com/stretchr/testify v1.9.0
