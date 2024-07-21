@@ -8,7 +8,6 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/krixlion/dev_forum-auth/pkg/tokens"
-	authware "github.com/krixlion/dev_forum-auth/pkg/tokens/middleware"
 	"github.com/krixlion/dev_forum-gateway/pkg/httpe"
 	"github.com/krixlion/dev_forum-gateway/pkg/middleware"
 	"github.com/krixlion/dev_forum-lib/logging"
@@ -42,7 +41,7 @@ func (s UserHandler) registerRoutes(translator tokens.Translator) {
 	s.router.With(otelhttp.NewMiddleware("CreateUser")).Post("/", httpe.NewHandler(s.CreateUser, s.logger).ServeHTTP)
 
 	s.router.Group(func(r chi.Router) {
-		r.Use(authware.Auth(translator, s.logger))
+		r.Use(middleware.Auth(translator, s.logger))
 
 		r.With(otelhttp.NewMiddleware("UpdateUser")).Patch("/{id}", httpe.NewHandler(s.UpdateUser, s.logger).ServeHTTP)
 		r.With(otelhttp.NewMiddleware("DeleteUser")).Delete("/{id}", httpe.NewHandler(s.DeleteUser, s.logger).ServeHTTP)
