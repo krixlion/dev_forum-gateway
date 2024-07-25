@@ -30,7 +30,7 @@ make build-image version=latest
 ``` 
 
 ```shell
-docker run -p 50051:50051 -p 2223:2223 krixlion/dev_forum-gateway:latest
+docker run -p 4000:4000 krixlion/dev_forum-gateway:latest
 ```
 
 ### On Kubernetes (recommended)
