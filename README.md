@@ -6,6 +6,10 @@ Although this is a one-man project, contributions are welcome.
 Please feel free to open issues or submit pull requests.
 
 # dev_forum-gateway
+[![GoDoc](https://godoc.org/github.com/krixlion/dev_forum-gateway?status.svg)](https://godoc.org/github.com/krixlion/dev_forum-gateway)
+[![Go Report Card](https://goreportcard.com/badge/github.com/krixlion/dev_forum-gateway)](https://goreportcard.com/report/github.com/krixlion/dev_forum-gateway)
+[![GitHub License](https://img.shields.io/github/license/krixlion/dev_forum-gateway)](LICENSE)
+
 Gateway is the entrypoint for all users of the dev_forum system.
 It is responsible for fetching the data from backend services required to construct responses.
 
