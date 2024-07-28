@@ -31,7 +31,6 @@ COPY --from=build /go/src/dev_forum-gateway/.env /app/.env
 # A user is required to allow Go os/user calls without CGO enabled.
 COPY --from=build /etc/passwd /etc/passwd
 
-EXPOSE 50051
-EXPOSE 2223
+EXPOSE 4000
 
 ENTRYPOINT [ "/app/main" ]
