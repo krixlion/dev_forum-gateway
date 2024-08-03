@@ -57,7 +57,7 @@ func Auth(translator tokens.Translator, logger logging.Logger) func(http.Handler
 				return
 			}
 
-			token, err := translator.TranslateAccessToken(opaqueToken)
+			token, err := translator.TranslateAccessToken(ctx, opaqueToken)
 			if err != nil {
 				respond(ctx, w, http.StatusUnauthorized, "Bearer token is invalid", logger)
 				return
