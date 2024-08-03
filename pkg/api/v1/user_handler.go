@@ -39,13 +39,9 @@ func (s UserHandler) registerRoutes(translator tokens.Translator) {
 	s.router.With(otelhttp.NewMiddleware("GetUser")).Get("/{id}", httpe.NewHandler(s.GetUser, s.logger).ServeHTTP)
 	s.router.With(otelhttp.NewMiddleware("GetUsers")).Get("/", httpe.NewHandler(s.GetUsers, s.logger).ServeHTTP)
 	s.router.With(otelhttp.NewMiddleware("CreateUser")).Post("/", httpe.NewHandler(s.CreateUser, s.logger).ServeHTTP)
-
-	s.router.Group(func(r chi.Router) {
-		r.Use(middleware.Auth(translator, s.logger))
-
-		r.With(otelhttp.NewMiddleware("UpdateUser")).Patch("/{id}", httpe.NewHandler(s.UpdateUser, s.logger).ServeHTTP)
-		r.With(otelhttp.NewMiddleware("DeleteUser")).Delete("/{id}", httpe.NewHandler(s.DeleteUser, s.logger).ServeHTTP)
-	})
+	// Add Auth middleware inline in order to keep the context propagation order.
+	s.router.With(otelhttp.NewMiddleware("UpdateUser"), middleware.Auth(translator, s.logger)).Patch("/{id}", httpe.NewHandler(s.UpdateUser, s.logger).ServeHTTP)
+	s.router.With(otelhttp.NewMiddleware("DeleteUser"), middleware.Auth(translator, s.logger)).Delete("/{id}", httpe.NewHandler(s.DeleteUser, s.logger).ServeHTTP)
 }
 
 // ServeHTTP is called on each request before it's passed to the handler.
