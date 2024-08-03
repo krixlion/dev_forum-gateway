@@ -148,7 +148,7 @@ func getServiceDependencies(ctx context.Context, serviceName string, port int, i
 		StreamRenewalInterval: time.Second * 10,
 		JobQueueSize:          1,
 	}
-	translator := translator.NewTranslator(authClient, translatorConfig, translator.WithLogger(logger))
+	translator := translator.NewTranslator(authClient, translatorConfig, translator.WithTracer(tracer), translator.WithLogger(logger))
 	go translator.Run(ctx)
 
 	router := chi.NewRouter()
