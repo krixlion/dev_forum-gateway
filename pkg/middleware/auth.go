@@ -65,6 +65,7 @@ func Auth(translator tokens.Translator, logger logging.Logger) func(http.Handler
 
 			if token == "" {
 				respond(ctx, w, http.StatusInternalServerError, "Failed to parse bearer token", logger)
+				return
 			}
 
 			h.ServeHTTP(w, r.WithContext(context.WithValue(ctx, CtxTokenKey{}, token)))
