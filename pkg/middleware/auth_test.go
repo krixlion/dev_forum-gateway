@@ -23,7 +23,7 @@ func TestAuth(t *testing.T) {
 		wantToken := "test-token-translated"
 
 		m := tokensmocks.NewTokenTranslator()
-		m.On("TranslateAccessToken", "test-token").Return(wantToken, nil).Once()
+		m.On("TranslateAccessToken", mock.Anything, "test-token").Return(wantToken, nil).Once()
 
 		h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			gotToken, ok := r.Context().Value(CtxTokenKey{}).(string)
@@ -103,7 +103,7 @@ func TestAuth(t *testing.T) {
 				}(),
 				translator: func() tokens.Translator {
 					m := tokensmocks.NewTokenTranslator()
-					m.On("TranslateAccessToken", mock.AnythingOfType("string")).Return("", errors.New("test-err")).Once()
+					m.On("TranslateAccessToken", mock.Anything, mock.AnythingOfType("string")).Return("", errors.New("test-err")).Once()
 					return m
 				}(),
 			},
