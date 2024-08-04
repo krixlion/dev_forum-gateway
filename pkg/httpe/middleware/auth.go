@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/krixlion/dev_forum-auth/pkg/tokens"
-	"github.com/krixlion/dev_forum-lib/logging"
+	"github.com/krixlion/dev_forum-gateway/pkg/httpe"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -36,46 +36,34 @@ func ConvertTokenContext(ctx context.Context) (context.Context, error) {
 // If the token is valid, the translated token is added to the request's context
 // using context.WithValue().
 // Use r.Context().Value(middleware.TokenKey) to extract the token.
-func Auth(translator tokens.Translator, logger logging.Logger) func(http.Handler) http.Handler {
-	return func(h http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func Auth(translator tokens.Translator) func(handlerFunc httpe.HandlerEFunc) httpe.HandlerEFunc {
+	return func(handlerFunc httpe.HandlerEFunc) httpe.HandlerEFunc {
+		return httpe.HandlerEFunc(func(r *http.Request) (httpe.Response, error) {
 			ctx := r.Context()
 			bearer, ok := r.Header["Authorization"]
 			if !ok {
-				respond(ctx, w, http.StatusUnauthorized, "Authorization header is missing", logger)
-				return
+				return nil, httpe.NewError(http.StatusUnauthorized, "Authorization header is missing")
 			}
 
 			if len(bearer) <= 0 || bearer[0] == "" {
-				respond(ctx, w, http.StatusUnauthorized, "Bearer token is missing", logger)
-				return
+				return nil, httpe.NewError(http.StatusUnauthorized, "Bearer token is missing")
 			}
 
 			opaqueToken, found := strings.CutPrefix(bearer[0], "Bearer ")
 			if !found {
-				respond(ctx, w, http.StatusUnauthorized, "Bearer token is malformed", logger)
-				return
+				return nil, httpe.NewError(http.StatusUnauthorized, "Bearer token is malformed")
 			}
 
 			token, err := translator.TranslateAccessToken(ctx, opaqueToken)
 			if err != nil {
-				respond(ctx, w, http.StatusUnauthorized, "Bearer token is invalid", logger)
-				return
+				return nil, httpe.NewError(http.StatusUnauthorized, "Bearer token is invalid")
 			}
 
 			if token == "" {
-				respond(ctx, w, http.StatusInternalServerError, "Failed to parse bearer token", logger)
-				return
+				return nil, httpe.NewError(http.StatusInternalServerError, "Failed to parse bearer token")
 			}
 
-			h.ServeHTTP(w, r.WithContext(context.WithValue(ctx, CtxTokenKey{}, token)))
+			return handlerFunc(r.WithContext(context.WithValue(ctx, CtxTokenKey{}, token)))
 		})
-	}
-}
-
-func respond(ctx context.Context, w http.ResponseWriter, status int, body string, logger logging.Logger) {
-	w.WriteHeader(status)
-	if _, err := w.Write([]byte(body)); err != nil {
-		logger.Log(ctx, "failed to write response: %v", err)
 	}
 }

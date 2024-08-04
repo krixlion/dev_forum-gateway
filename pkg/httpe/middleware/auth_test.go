@@ -2,13 +2,13 @@ package middleware
 
 import (
 	"errors"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/krixlion/dev_forum-auth/pkg/tokens"
 	"github.com/krixlion/dev_forum-auth/pkg/tokens/tokensmocks"
+	"github.com/krixlion/dev_forum-gateway/pkg/httpe"
 	"github.com/krixlion/dev_forum-lib/nulls"
 	"github.com/stretchr/testify/mock"
 )
@@ -25,22 +25,22 @@ func TestAuth(t *testing.T) {
 		m := tokensmocks.NewTokenTranslator()
 		m.On("TranslateAccessToken", mock.Anything, "test-token").Return(wantToken, nil).Once()
 
-		h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		h := httpe.HandlerEFunc(func(r *http.Request) (httpe.Response, error) {
 			gotToken, ok := r.Context().Value(CtxTokenKey{}).(string)
 			if !ok {
 				t.Errorf("Auth(): failed to extract token from context")
-				return
+				return nil, nil
 			}
+
 			if gotToken != wantToken {
 				t.Errorf("Auth(): handler received an unexpected token:\n got = %v\n want = %v\n", gotToken, wantToken)
-				return
+				return nil, nil
 			}
-			if _, err := w.Write(nil); err != nil {
-				log.Fatalf("Auth(): failed to write nil resp from stub handler: %v", err)
-			}
+
+			return httpe.NewResponse(200, nil), nil
 		})
 
-		Auth(m, nulls.NullLogger{})(h).ServeHTTP(w, r)
+		httpe.NewHandler(Auth(m)(h), nulls.NullLogger{}).ServeHTTP(w, r)
 
 		res := w.Result()
 		defer res.Body.Close()
@@ -113,13 +113,9 @@ func TestAuth(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			w := httptest.NewRecorder()
-			handlerStub := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				if _, err := w.Write(nil); err != nil {
-					log.Fatalf("Auth(): failed to write nil resp from stub handler: %v", err)
-				}
-			})
+			handlerStub := httpe.HandlerEFunc(func(r *http.Request) (httpe.Response, error) { return httpe.NewResponse(200, nil), nil })
 
-			Auth(tt.args.translator, nulls.NullLogger{})(handlerStub).ServeHTTP(w, tt.args.r)
+			httpe.NewHandler(Auth(tt.args.translator)(handlerStub), nulls.NullLogger{}).ServeHTTP(w, tt.args.r)
 
 			res := w.Result()
 			defer res.Body.Close()

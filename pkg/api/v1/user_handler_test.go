@@ -15,7 +15,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/krixlion/dev_forum-auth/pkg/tokens/tokensmocks"
 	"github.com/krixlion/dev_forum-gateway/pkg/httpe"
-	"github.com/krixlion/dev_forum-gateway/pkg/middleware"
+	"github.com/krixlion/dev_forum-gateway/pkg/httpe/middleware"
 	"github.com/krixlion/dev_forum-lib/logging"
 	"github.com/krixlion/dev_forum-lib/nulls"
 	"github.com/krixlion/dev_forum-user/pkg/grpc/mocks"
