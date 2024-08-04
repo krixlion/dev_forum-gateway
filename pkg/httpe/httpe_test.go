@@ -410,13 +410,18 @@ func Test_respond(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "Test returns an error when trying to encode invalid input to json",
-			resp: NewResponse(http.StatusCreated, make(chan int)),
-			want: result{
-				statusCode: http.StatusCreated,
-				body:       `{"data":"testdata"}` + "\n",
-			},
+			name:    "Test returns an error when trying to encode invalid input to json",
+			resp:    NewResponse(http.StatusCreated, make(chan int)),
 			wantErr: true,
+		},
+		{
+			name: "Test returns no body on 204 response",
+			resp: NewResponse(http.StatusNoContent, map[string]string{"test": "testmsg"}),
+			want: result{
+				statusCode: http.StatusNoContent,
+				body:       "",
+			},
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {

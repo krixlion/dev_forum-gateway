@@ -61,7 +61,7 @@ func (resp HttpResponse) Status() int { return resp.status }
 
 func (resp HttpResponse) Body() interface{} {
 	if resp.body == nil {
-		// When encoded will result in "{}" instead of "null"
+		// When encoded, this will result in "{}" instead of "null"
 		return struct{}{}
 	}
 	return resp.body
@@ -113,8 +113,14 @@ func respondError(w http.ResponseWriter, err HttpError) error {
 // Returns an error if it fails to encode the response body to JSON or fails
 // to write to the http.ResponseWriter.
 func respond(w http.ResponseWriter, resp Response) error {
+	status := resp.Status()
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(resp.Status())
+	w.WriteHeader(status)
+
+	// Do not write resp body on statuses that prohibit it.
+	if status >= 100 && status <= 199 || status == 204 || status == 304 {
+		return nil
+	}
 
 	return json.NewEncoder(w).Encode(resp.Body())
 }
