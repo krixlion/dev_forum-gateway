@@ -46,7 +46,7 @@ type Response interface {
 }
 
 // NewResponse returns a new HttpResponse implementing the Response interface.
-func NewResponse(status int, body interface{}) Response {
+func NewResponse(status int, body interface{}) HttpResponse {
 	return HttpResponse{status: status, body: body}
 }
 
