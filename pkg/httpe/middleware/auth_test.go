@@ -40,7 +40,7 @@ func TestAuth(t *testing.T) {
 			return httpe.NewResponse(200, nil), nil
 		})
 
-		httpe.NewHandler(Auth(m)(h), nulls.NullLogger{}).ServeHTTP(w, r)
+		httpe.ToHandlerFunc(Auth(m)(h), nulls.NullLogger{}).ServeHTTP(w, r)
 
 		res := w.Result()
 		defer res.Body.Close()
@@ -115,7 +115,7 @@ func TestAuth(t *testing.T) {
 			w := httptest.NewRecorder()
 			handlerStub := httpe.HandlerEFunc(func(r *http.Request) (httpe.Response, error) { return httpe.NewResponse(200, nil), nil })
 
-			httpe.NewHandler(Auth(tt.args.translator)(handlerStub), nulls.NullLogger{}).ServeHTTP(w, tt.args.r)
+			httpe.ToHandlerFunc(Auth(tt.args.translator)(handlerStub), nulls.NullLogger{}).ServeHTTP(w, tt.args.r)
 
 			res := w.Result()
 			defer res.Body.Close()

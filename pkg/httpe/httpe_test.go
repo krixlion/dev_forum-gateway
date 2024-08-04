@@ -89,7 +89,7 @@ func TestNewHandler(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			w := httptest.NewRecorder()
 
-			NewHandler(tt.args.fn, tt.args.logger).ServeHTTP(w, tt.args.r)
+			ToHandlerFunc(tt.args.fn, tt.args.logger).ServeHTTP(w, tt.args.r)
 
 			got := w.Result()
 			if got.StatusCode != tt.want.statusCode {

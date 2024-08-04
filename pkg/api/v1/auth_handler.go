@@ -33,9 +33,9 @@ func MakeAuthHandler(grpcClient pb.AuthServiceClient, logger logging.Logger) Aut
 }
 
 func (s AuthHandler) registerRoutes() {
-	s.router.With(otelhttp.NewMiddleware("SignIn")).Post("/sign-in", httpe.NewHandler(s.SignIn, s.logger).ServeHTTP)
-	s.router.With(otelhttp.NewMiddleware("SignOut")).Post("/sign-out", httpe.NewHandler(s.SignOut, s.logger).ServeHTTP)
-	s.router.With(otelhttp.NewMiddleware("GetAccessToken")).Post("/get-access-token", httpe.NewHandler(s.GetAccessToken, s.logger).ServeHTTP)
+	s.router.With(otelhttp.NewMiddleware("SignIn")).Post("/sign-in", httpe.ToHandlerFunc(s.SignIn, s.logger))
+	s.router.With(otelhttp.NewMiddleware("SignOut")).Post("/sign-out", httpe.ToHandlerFunc(s.SignOut, s.logger))
+	s.router.With(otelhttp.NewMiddleware("GetAccessToken")).Post("/get-access-token", httpe.ToHandlerFunc(s.GetAccessToken, s.logger))
 }
 
 func (s AuthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

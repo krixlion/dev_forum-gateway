@@ -9,32 +9,33 @@ import (
 
 type HandlerEFunc func(r *http.Request) (Response, error)
 
-// NewHandler wraps the given HandlerEFunc and converts it into a http.Handler.
-// If the HandlerEFunc returns a non-nil error other than HttpError, the handler
+// ToHandlerFunc wraps the given HandlerEFunc and converts it into a http.HandlerFunc.
+// If the HandlerEFunc returns a non-nil error other than HttpError, the handlerFunc
 // will respond to the request with an internal server error. If the error is a HttpError, the
-// handler will respond with error's status and err message encoded to JSON. If the handler
+// handlerFunc will respond with error's status and err message encoded to JSON. If the handlerFunc
 // fails to send the response it will not attempt any further retries and log the error that caused the failure.
-func NewHandler(fn HandlerEFunc, logger logging.Logger) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func ToHandlerFunc(fn HandlerEFunc, logger logging.Logger) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
 		resp, err := fn(r)
 		if err != nil {
 			if httpErr, ok := err.(HttpError); ok {
 				if err := respondError(w, httpErr); err != nil {
-					logger.Log(r.Context(), "Failed to send error response", "transport", "http", "err", err)
+					logger.Log(ctx, "Failed to send error response", "transport", "http", "err", err)
 				}
 				return
 			}
 
 			if err := respondError(w, HttpError{status: http.StatusInternalServerError, msg: "Internal Server Error"}); err != nil {
-				logger.Log(r.Context(), "Failed to send error response", "transport", "http", "err", err)
+				logger.Log(ctx, "Failed to send error response", "transport", "http", "err", err)
 			}
 			return
 		}
 
 		if err := respond(w, resp); err != nil {
-			logger.Log(r.Context(), "Failed to send response", "transport", "http", "err", err)
+			logger.Log(ctx, "Failed to send response", "transport", "http", "err", err)
 		}
-	})
+	}
 }
 
 // Response represents any non-error HTTP response.

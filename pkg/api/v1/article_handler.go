@@ -36,12 +36,11 @@ func MakeArticleHandler(grpcClient pb.ArticleServiceClient, translator tokens.Tr
 }
 
 func (s ArticleHandler) registerRoutes(translator tokens.Translator) {
-	s.router.With(otelhttp.NewMiddleware("GetArticle")).Get("/{id}", httpe.NewHandler(s.GetArticle, s.logger).ServeHTTP)
-	s.router.With(otelhttp.NewMiddleware("GetArticles")).Get("/", httpe.NewHandler(s.GetArticles, s.logger).ServeHTTP)
-	// Add Auth middleware inline in order to keep the context propagation order.
-	s.router.With(otelhttp.NewMiddleware("CreateArticle")).Post("/", httpe.NewHandler(middleware.Auth(translator)(s.CreateArticle), s.logger).ServeHTTP)
-	s.router.With(otelhttp.NewMiddleware("UpdateArticle")).Patch("/{id}", httpe.NewHandler(middleware.Auth(translator)(s.UpdateArticle), s.logger).ServeHTTP)
-	s.router.With(otelhttp.NewMiddleware("DeleteArticle")).Delete("/{id}", httpe.NewHandler(middleware.Auth(translator)(s.DeleteArticle), s.logger).ServeHTTP)
+	s.router.With(otelhttp.NewMiddleware("GetArticle")).Get("/{id}", httpe.ToHandlerFunc(s.GetArticle, s.logger))
+	s.router.With(otelhttp.NewMiddleware("GetArticles")).Get("/", httpe.ToHandlerFunc(s.GetArticles, s.logger))
+	s.router.With(otelhttp.NewMiddleware("CreateArticle")).Post("/", httpe.ToHandlerFunc(middleware.Apply(s.CreateArticle, middleware.Auth(translator)), s.logger))
+	s.router.With(otelhttp.NewMiddleware("UpdateArticle")).Patch("/{id}", httpe.ToHandlerFunc(middleware.Apply(s.UpdateArticle, middleware.Auth(translator)), s.logger))
+	s.router.With(otelhttp.NewMiddleware("DeleteArticle")).Delete("/{id}", httpe.ToHandlerFunc(middleware.Apply(s.DeleteArticle, middleware.Auth(translator)), s.logger))
 }
 
 func (s ArticleHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
