@@ -9,9 +9,9 @@ import (
 
 type HandlerEFunc func(r *http.Request) (Response, error)
 
-// NewHandler wraps the given [HandlerEFunc] and converts it into a http.Handler.
-// If the [HandlerEFunc] returns a non-nil error other than [HttpError], the handler
-// will respond to the request with an internal server error. If the error is a [HttpError], the
+// NewHandler wraps the given HandlerEFunc and converts it into a http.Handler.
+// If the HandlerEFunc returns a non-nil error other than HttpError, the handler
+// will respond to the request with an internal server error. If the error is a HttpError, the
 // handler will respond with error's status and err message encoded to JSON. If the handler
 // fails to send the response it will not attempt any further retries and log the error that caused the failure.
 func NewHandler(fn HandlerEFunc, logger logging.Logger) http.Handler {
@@ -38,8 +38,8 @@ func NewHandler(fn HandlerEFunc, logger logging.Logger) http.Handler {
 }
 
 // Response represents any non-error HTTP response.
-// To respond with an error refer to [HttpError].
-// Use [NewResponse] to construct a new response.
+// To respond with an error refer to HttpError.
+// Use NewResponse to construct a new response.
 type Response interface {
 	Status() int
 	Body() interface{}
@@ -68,7 +68,7 @@ func (resp HttpResponse) Body() interface{} {
 }
 
 // HttpError represents any HTTP response indicating an error.
-// Use [NewError] to construct a new error.
+// Use NewError to construct a new error.
 type HttpError struct {
 	status int
 	msg    string
@@ -86,8 +86,8 @@ func (e HttpError) MarshalJSON() ([]byte, error) {
 // NewError returns a new HttpError with given status and error message.
 func NewError(status int, msg string) error {
 	return HttpError{
-		msg:    msg,
 		status: status,
+		msg:    msg,
 	}
 }
 
