@@ -21,9 +21,9 @@ import (
 //	}
 type CtxTokenKey struct{}
 
-// ConvertCtxMetadata reads the token from given context and appends it to gRPC metadata.
+// ConvertTokenContext reads the token from given context and appends it to gRPC metadata.
 // Returns outgoing context with bearer token injected into Authorization header or a non-nil error.
-func ConvertCtxMetadata(ctx context.Context) (context.Context, error) {
+func ConvertTokenContext(ctx context.Context) (context.Context, error) {
 	token, ok := ctx.Value(CtxTokenKey{}).(string)
 	if !ok {
 		return nil, errors.New("token is not a string")

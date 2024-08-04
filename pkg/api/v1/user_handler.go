@@ -146,7 +146,7 @@ func (s UserHandler) UpdateUser(r *http.Request) (httpe.Response, error) {
 	ctx := r.Context()
 	span := trace.SpanFromContext(ctx)
 
-	ctx, err := middleware.ConvertCtxMetadata(ctx)
+	ctx, err := middleware.ConvertTokenContext(ctx)
 	if err != nil {
 		tracing.SetSpanErr(span, err)
 		s.logger.Log(ctx, "failed convert context metadata", "transport", "http", "err", err)
@@ -184,7 +184,7 @@ func (s UserHandler) DeleteUser(r *http.Request) (httpe.Response, error) {
 	ctx := r.Context()
 	span := trace.SpanFromContext(ctx)
 
-	ctx, err := middleware.ConvertCtxMetadata(ctx)
+	ctx, err := middleware.ConvertTokenContext(ctx)
 	if err != nil {
 		tracing.SetSpanErr(span, err)
 		s.logger.Log(ctx, "failed convert context metadata", "transport", "http", "err", err)

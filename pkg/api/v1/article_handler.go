@@ -119,7 +119,7 @@ func (s ArticleHandler) CreateArticle(r *http.Request) (httpe.Response, error) {
 	ctx := r.Context()
 	span := trace.SpanFromContext(ctx)
 
-	ctx, err := middleware.ConvertCtxMetadata(ctx)
+	ctx, err := middleware.ConvertTokenContext(ctx)
 	if err != nil {
 		tracing.SetSpanErr(span, err)
 		s.logger.Log(ctx, "failed convert context metadata", "transport", "http", "err", err)
@@ -151,7 +151,7 @@ func (s ArticleHandler) UpdateArticle(r *http.Request) (httpe.Response, error) {
 	ctx := r.Context()
 	span := trace.SpanFromContext(ctx)
 
-	ctx, err := middleware.ConvertCtxMetadata(ctx)
+	ctx, err := middleware.ConvertTokenContext(ctx)
 	if err != nil {
 		tracing.SetSpanErr(span, err)
 		s.logger.Log(ctx, "failed convert context metadata", "transport", "http", "err", err)
@@ -189,7 +189,7 @@ func (s ArticleHandler) DeleteArticle(r *http.Request) (httpe.Response, error) {
 	ctx := r.Context()
 	span := trace.SpanFromContext(ctx)
 
-	ctx, err := middleware.ConvertCtxMetadata(ctx)
+	ctx, err := middleware.ConvertTokenContext(ctx)
 	if err != nil {
 		tracing.SetSpanErr(span, err)
 		s.logger.Log(ctx, "failed convert context metadata", "transport", "http", "err", err)
