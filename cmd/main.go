@@ -29,6 +29,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/grpclog"
 )
 
 var port int
@@ -93,6 +94,7 @@ func getServiceDependencies(ctx context.Context, serviceName string, port int, i
 	if err != nil {
 		return service.Dependencies{}, err
 	}
+	grpclog.SetLoggerV2(logger)
 
 	var creds = insecure.NewCredentials()
 	if isTLS {
