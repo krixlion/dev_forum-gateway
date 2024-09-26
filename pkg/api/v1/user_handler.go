@@ -52,19 +52,17 @@ func (s UserHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 //   - Returns 200 if no error is encountered.
 //   - Returns 404 if the ID is an empty string or the service returned code NotFound.
 //   - Returns 500 on any error.
-func (s UserHandler) GetUser(r *http.Request) (httpe.Response, error) {
+func (s UserHandler) GetUser(r *http.Request) (_ httpe.Response, err error) {
 	ctx := r.Context()
-	span := trace.SpanFromContext(ctx)
+	defer tracing.SetSpanErr(trace.SpanFromContext(ctx), err)
 
 	userId := r.PathValue("id")
-	if errMsg := "user not found"; userId == "" {
-		tracing.SetSpanErr(span, errors.New(errMsg))
-		return nil, httpe.NewError(http.StatusNotFound, errMsg)
+	if userId == "" {
+		return nil, httpe.NewError(http.StatusNotFound, "user not found")
 	}
 
 	resp, err := s.userService.Get(ctx, &pb.GetUserRequest{Id: userId})
 	if err != nil {
-		tracing.SetSpanErr(span, err)
 		if s, ok := status.FromError(err); ok && s.Code() == codes.NotFound {
 			return nil, httpe.NewError(http.StatusNotFound, "user not found")
 		}
@@ -80,9 +78,10 @@ func (s UserHandler) GetUser(r *http.Request) (httpe.Response, error) {
 // forwards them to the UserService.
 //   - Returns 200 if no error is encountered.
 //   - Returns 500 on any error.
-func (s UserHandler) GetUsers(r *http.Request) (httpe.Response, error) {
+func (s UserHandler) GetUsers(r *http.Request) (_ httpe.Response, err error) {
 	ctx := r.Context()
-	span := trace.SpanFromContext(ctx)
+	defer tracing.SetSpanErr(trace.SpanFromContext(ctx), err)
+
 	queryParams := r.URL.Query()
 	offset := queryParams.Get("offset")
 	limit := queryParams.Get("limit")
@@ -90,7 +89,6 @@ func (s UserHandler) GetUsers(r *http.Request) (httpe.Response, error) {
 
 	stream, err := s.userService.GetStream(ctx, &pb.GetUsersRequest{Offset: offset, Limit: limit, Filter: filter})
 	if err != nil {
-		tracing.SetSpanErr(span, err)
 		s.logger.Log(ctx, "Failed to init user stream", "transport", "grpc", "err", err)
 		return nil, httpe.NewGenericError(http.StatusInternalServerError)
 	}
@@ -102,7 +100,6 @@ func (s UserHandler) GetUsers(r *http.Request) (httpe.Response, error) {
 			if errors.Is(err, io.EOF) {
 				break
 			}
-			tracing.SetSpanErr(span, err)
 			s.logger.Log(ctx, "Failed to read user from stream", "transport", "grpc", "err", err)
 			return nil, httpe.NewGenericError(http.StatusInternalServerError)
 		}
@@ -116,20 +113,18 @@ func (s UserHandler) GetUsers(r *http.Request) (httpe.Response, error) {
 //   - Returns 201 if no error is encountered. Response contains ID of created user.
 //   - Returns 400 when an error is encountered when decoding request's body.
 //   - Returns 500 on any other error.
-func (s UserHandler) CreateUser(r *http.Request) (httpe.Response, error) {
+func (s UserHandler) CreateUser(r *http.Request) (_ httpe.Response, err error) {
 	ctx := r.Context()
-	span := trace.SpanFromContext(ctx)
+	defer tracing.SetSpanErr(trace.SpanFromContext(ctx), err)
 
 	user := &pb.User{}
 	if err := json.NewDecoder(r.Body).Decode(user); err != nil {
-		tracing.SetSpanErr(span, err)
 		s.logger.Log(ctx, "Failed to decode request json body", "transport", "http", "err", err)
 		return nil, httpe.NewGenericError(http.StatusBadRequest)
 	}
 
 	resp, err := s.userService.Create(ctx, &pb.CreateUserRequest{User: user})
 	if err != nil {
-		tracing.SetSpanErr(span, err)
 		s.logger.Log(ctx, "Failed to create user", "transport", "grpc", "err", err)
 		return nil, httpe.NewGenericError(http.StatusInternalServerError)
 	}
@@ -141,26 +136,23 @@ func (s UserHandler) CreateUser(r *http.Request) (httpe.Response, error) {
 //   - Returns 404 if the ID is an empty string.
 //   - Returns 400 when an error is encountered when decoding request's body.
 //   - Returns 500 on any other error.
-func (s UserHandler) UpdateUser(r *http.Request) (httpe.Response, error) {
+func (s UserHandler) UpdateUser(r *http.Request) (_ httpe.Response, err error) {
 	ctx := r.Context()
-	span := trace.SpanFromContext(ctx)
+	defer tracing.SetSpanErr(trace.SpanFromContext(ctx), err)
 
-	ctx, err := middleware.ConvertTokenContext(ctx)
+	ctx, err = middleware.ConvertTokenContext(ctx)
 	if err != nil {
-		tracing.SetSpanErr(span, err)
 		s.logger.Log(ctx, "failed convert context metadata", "transport", "http", "err", err)
 		return nil, httpe.NewGenericError(http.StatusInternalServerError)
 	}
 
 	userId := r.PathValue("id")
-	if errMsg := "user not found"; userId == "" {
-		tracing.SetSpanErr(span, errors.New(errMsg))
-		return nil, httpe.NewError(http.StatusNotFound, errMsg)
+	if userId == "" {
+		return nil, httpe.NewError(http.StatusNotFound, "user not found")
 	}
 
 	user := &pb.User{}
 	if err := json.NewDecoder(r.Body).Decode(user); err != nil {
-		tracing.SetSpanErr(span, err)
 		s.logger.Log(ctx, "Failed to decode request json body", "transport", "http", "err", err)
 		return nil, httpe.NewGenericError(http.StatusBadRequest)
 	}
@@ -168,7 +160,6 @@ func (s UserHandler) UpdateUser(r *http.Request) (httpe.Response, error) {
 	user.Id = userId
 
 	if _, err := s.userService.Update(ctx, &pb.UpdateUserRequest{User: user}); err != nil {
-		tracing.SetSpanErr(span, err)
 		s.logger.Log(ctx, "Failed to update user", "transport", "grpc", "err", err)
 		return nil, httpe.NewGenericError(http.StatusInternalServerError)
 	}
@@ -179,25 +170,22 @@ func (s UserHandler) UpdateUser(r *http.Request) (httpe.Response, error) {
 //   - Returns 204 if no error is encountered.
 //   - Returns 404 if the ID is an empty string.
 //   - Returns 500 on any other error.
-func (s UserHandler) DeleteUser(r *http.Request) (httpe.Response, error) {
+func (s UserHandler) DeleteUser(r *http.Request) (_ httpe.Response, err error) {
 	ctx := r.Context()
-	span := trace.SpanFromContext(ctx)
+	defer tracing.SetSpanErr(trace.SpanFromContext(ctx), err)
 
-	ctx, err := middleware.ConvertTokenContext(ctx)
+	ctx, err = middleware.ConvertTokenContext(ctx)
 	if err != nil {
-		tracing.SetSpanErr(span, err)
 		s.logger.Log(ctx, "failed convert context metadata", "transport", "http", "err", err)
 		return nil, httpe.NewGenericError(http.StatusInternalServerError)
 	}
 
 	userId := r.PathValue("id")
-	if errMsg := "user not found"; userId == "" {
-		tracing.SetSpanErr(span, errors.New(errMsg))
-		return nil, httpe.NewError(http.StatusNotFound, errMsg)
+	if userId == "" {
+		return nil, httpe.NewError(http.StatusNotFound, "user not found")
 	}
 
 	if _, err := s.userService.Delete(ctx, &pb.DeleteUserRequest{Id: userId}); err != nil {
-		tracing.SetSpanErr(span, err)
 		s.logger.Log(ctx, "Failed to delete user", "transport", "grpc", "err", err)
 		return nil, httpe.NewGenericError(http.StatusInternalServerError)
 	}
