@@ -121,7 +121,7 @@ func getServiceDependencies(ctx context.Context, serviceName string, port int, i
 		creds = credentials.NewTLS(tlsConfig)
 	}
 
-	authConn, err := grpc.NewClient(os.Getenv("AUTH_SERVICE_SERVICE_HOST")+":"+os.Getenv("AUTH_SERVICE_SERVICE_PORT"),
+	authConn, err := grpc.NewClient(os.Getenv("AUTH_SERVICE_URL"),
 		grpc.WithTransportCredentials(creds),
 		grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
 	)
@@ -130,7 +130,7 @@ func getServiceDependencies(ctx context.Context, serviceName string, port int, i
 	}
 	authClient := authpb.NewAuthServiceClient(authConn)
 
-	userConn, err := grpc.NewClient(os.Getenv("USER_SERVICE_SERVICE_HOST")+":"+os.Getenv("USER_SERVICE_SERVICE_PORT"),
+	userConn, err := grpc.NewClient(os.Getenv("USER_SERVICE_URL"),
 		grpc.WithTransportCredentials(creds),
 		grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
 	)
@@ -138,7 +138,7 @@ func getServiceDependencies(ctx context.Context, serviceName string, port int, i
 		return service.Dependencies{}, err
 	}
 
-	articleConn, err := grpc.NewClient(os.Getenv("ARTICLE_SERVICE_SERVICE_HOST")+":"+os.Getenv("ARTICLE_SERVICE_SERVICE_PORT"),
+	articleConn, err := grpc.NewClient(os.Getenv("ARTICLE_SERVICE_URL"),
 		grpc.WithTransportCredentials(creds),
 		grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
 	)
