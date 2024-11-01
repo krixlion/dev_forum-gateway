@@ -25,8 +25,8 @@ github.com/krixlion/dev_forum-article v0.0.0-20240718151546-68c836809d32 h1:RaAK
 github.com/krixlion/dev_forum-article v0.0.0-20240718151546-68c836809d32/go.mod h1:pKFhswuCqm/uQw16iqIQegoqONE4vUjKOvMcNEuCQug=
 github.com/krixlion/dev_forum-auth v0.0.0-20240803193538-6ccff0fca716 h1:DH36HjEHELdEzOIHmiDZN+QCmsYwo7a5XJmh42gPf/M=
 github.com/krixlion/dev_forum-auth v0.0.0-20240803193538-6ccff0fca716/go.mod h1:YtWAg6LwqI/Sx1Y6YBJICdoypEJyf9GXaCPb6isIxTA=
-github.com/krixlion/dev_forum-lib v0.0.0-20240918145949-26181993d2c1 h1:26N+exJIdtvqMbFZaxChY9viikKCfWOKGMRGwXKKd+8=
-github.com/krixlion/dev_forum-lib v0.0.0-20240918145949-26181993d2c1/go.mod h1:R1pmph/Uwu0psMaIbl22ZzH4BruuHriPFC8nybaml94=
+github.com/krixlion/dev_forum-lib v0.0.0-20241101143359-70fd1416b5bb h1:eSfFLQg75rQlDlBAA+4Wpp5+6xF2GOxJk3A2jrr1D4o=
+github.com/krixlion/dev_forum-lib v0.0.0-20241101143359-70fd1416b5bb/go.mod h1:let59LBQuR5Fuy8B6y7wLJQ5zmJ9pk/N+Tct2uPOWLY=
 github.com/krixlion/dev_forum-user v0.0.0-20240623144814-63dd578d52e2 h1:rMg1quMFW5rgS+9GA6ceemelpd8Noa1rJkIgohoJs8o=
 github.com/krixlion/dev_forum-user v0.0.0-20240623144814-63dd578d52e2/go.mod h1:cJMxB55MlGqZb0MAbVAmMCVkNnuehwLWf6JFuRrMWrA=
 github.com/petermattis/goid v0.0.0-20180202154549-b0b1615b78e5 h1:q2e307iGHPdTGp0hoxKjt1H5pDo6utceo3dQVK3I5XQ=
