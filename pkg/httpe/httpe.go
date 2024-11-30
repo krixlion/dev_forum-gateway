@@ -93,7 +93,7 @@ func NewError(status int, msg string) error {
 }
 
 // NewGenericError returns a new HttpError with given status and its text as error message.
-func NewGenericError(status int) error {
+func NewGenericError(status int) HttpError {
 	return HttpError{
 		status: status,
 		msg:    http.StatusText(status),
