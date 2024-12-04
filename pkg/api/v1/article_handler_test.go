@@ -212,7 +212,7 @@ func TestArticleHandler_CreateArticle(t *testing.T) {
 			fields: fields{
 				articleService: func() pb.ArticleServiceClient {
 					m := mocks.NewArticleClient()
-					m.On("Create", mock.Anything, &pb.CreateArticleRequest{Article: &pb.Article{Id: "test-id", Title: "test-title"}}, mock.AnythingOfType("[]grpc.CallOption")).
+					m.On("Create", mock.Anything, &pb.CreateArticleRequest{Article: &pb.Article{Title: "test-title"}}, mock.AnythingOfType("[]grpc.CallOption")).
 						Return(&pb.CreateArticleResponse{Id: "test-id"}, nil).
 						Once()
 					return m
@@ -220,11 +220,11 @@ func TestArticleHandler_CreateArticle(t *testing.T) {
 			},
 			args: args{
 				r: func() *http.Request {
-					r := httptest.NewRequest("POST", "/", strings.NewReader(`{"id":"test-id","title":"test-title"}`))
+					r := httptest.NewRequest("POST", "/", strings.NewReader(`{"title":"test-title"}`))
 					return r.WithContext(context.WithValue(r.Context(), middleware.CtxTokenKey{}, "test-token"))
 				}(),
 			},
-			want:    httpe.NewResponse(http.StatusCreated, map[string]string{"id": "test-id"}),
+			want:    httpe.NewResponse(http.StatusCreated, CreateArticleResponse{Id: "test-id"}),
 			wantErr: false,
 		},
 		{
@@ -248,7 +248,7 @@ func TestArticleHandler_CreateArticle(t *testing.T) {
 				return
 			}
 			if !cmp.Equal(got, tt.want, cmp.AllowUnexported(httpe.HttpResponse{})) {
-				t.Errorf("ArticleHandler.CreateArticle():\n got = %v\n want = %v", got, tt.want)
+				t.Errorf("ArticleHandler.CreateArticle():\n got = %+v\n want = %+v", got, tt.want)
 			}
 		})
 	}
