@@ -224,14 +224,14 @@ func TestUserHandler_CreateUser(t *testing.T) {
 			fields: fields{
 				userService: func() pb.UserServiceClient {
 					m := mocks.NewUserClient()
-					m.On("Create", mock.Anything, &pb.CreateUserRequest{User: &pb.User{Id: "test-id"}}, mock.AnythingOfType("[]grpc.CallOption")).Return(&pb.CreateUserResponse{Id: "test-id"}, nil).Once()
+					m.On("Create", mock.Anything, &pb.CreateUserRequest{User: &pb.User{Name: "test-name"}}, mock.AnythingOfType("[]grpc.CallOption")).Return(&pb.CreateUserResponse{Id: "test-id"}, nil).Once()
 					return m
 				}(),
 			},
 			args: args{
-				r: httptest.NewRequest("POST", "/", bytes.NewReader(mustMarshalJSON(&pb.User{Id: "test-id"}, t))),
+				r: httptest.NewRequest("POST", "/", bytes.NewReader(mustMarshalJSON(&pb.User{Name: "test-name"}, t))),
 			},
-			want:    httpe.NewResponse(http.StatusCreated, map[string]string{"id": "test-id"}),
+			want:    httpe.NewResponse(http.StatusCreated, CreateUserResponse{Id: "test-id"}),
 			wantErr: false,
 		},
 	}
