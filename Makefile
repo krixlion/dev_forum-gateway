@@ -11,6 +11,10 @@ mod-init:
 	go mod tidy
 	go mod vendor
 
+openapi:
+	swag fmt
+	swag init -g pkg/api/v1/handler.go -v3.1 -ot json --parseFuncBody --generatedTime --pd
+	mv docs/swagger.json docs/openapi.json
 grpc-gen:
 	docker run --rm -v $(shell pwd):/app --env-file .env krixlion/go-grpc-gen:${GO_VERSION}
 

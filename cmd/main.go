@@ -12,7 +12,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/go-chi/chi/v5"
+	articlepb "github.com/krixlion/dev_forum-article/pkg/grpc/v1"
 	authpb "github.com/krixlion/dev_forum-auth/pkg/grpc/v1"
 	"github.com/krixlion/dev_forum-auth/pkg/tokens/translator"
 	"github.com/krixlion/dev_forum-gateway/pkg/api/v1"
@@ -20,11 +20,10 @@ import (
 	"github.com/krixlion/dev_forum-lib/cert"
 	"github.com/krixlion/dev_forum-lib/env"
 	"github.com/krixlion/dev_forum-lib/logging"
+	userpb "github.com/krixlion/dev_forum-user/pkg/grpc/v1"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 
-	articlepb "github.com/krixlion/dev_forum-article/pkg/grpc/v1"
 	"github.com/krixlion/dev_forum-lib/tracing"
-	userpb "github.com/krixlion/dev_forum-user/pkg/grpc/v1"
 	"go.opentelemetry.io/otel"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -157,13 +156,8 @@ func getServiceDependencies(ctx context.Context, serviceName string, port int, i
 	translator := translator.NewTranslator(authClient, translatorConfig, translator.WithTracer(tracer), translator.WithLogger(logger))
 	go translator.Run(ctx)
 
-	router := chi.NewRouter()
-	router.Mount("/articles", api.MakeArticleHandler(articlepb.NewArticleServiceClient(articleConn), translator, logger))
-	router.Mount("/users", api.MakeUserHandler(userpb.NewUserServiceClient(userConn), translator, logger))
-	router.Mount("/auth", api.MakeAuthHandler(authClient, logger))
-
 	httpServer := &http.Server{
-		Handler:      router,
+		Handler:      api.NewHandler(authClient, userpb.NewUserServiceClient(userConn), articlepb.NewArticleServiceClient(articleConn), translator, logger),
 		Addr:         fmt.Sprintf("0.0.0.0:%d", port),
 		ReadTimeout:  time.Second * 30,
 		WriteTimeout: time.Second * 30,

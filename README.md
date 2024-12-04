@@ -79,3 +79,5 @@ make k8s-unit-test overlay=<dev/stage/...>
 
 ## Documentation
 For detailed documentation refer to the [Wiki](https://github.com/krixlion/dev_forum-gateway/wiki).
+
+OpenAPI documentation is available in `docs/`.
