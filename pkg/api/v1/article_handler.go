@@ -116,7 +116,7 @@ func (s ArticleHandler) CreateArticle(r *http.Request) (_ httpe.Response, err er
 
 	ctx, err = middleware.ConvertTokenContext(ctx)
 	if err != nil {
-		s.logger.Log(ctx, "failed convert context metadata", "transport", "http", "err", err)
+		s.logger.Log(ctx, "Failed convert context metadata", "transport", "http", "err", err)
 		return nil, httpe.NewGenericError(http.StatusInternalServerError)
 	}
 
@@ -145,7 +145,7 @@ func (s ArticleHandler) UpdateArticle(r *http.Request) (_ httpe.Response, err er
 
 	ctx, err = middleware.ConvertTokenContext(ctx)
 	if err != nil {
-		s.logger.Log(ctx, "failed convert context metadata", "transport", "http", "err", err)
+		s.logger.Log(ctx, "Failed convert context metadata", "transport", "http", "err", err)
 		return nil, httpe.NewGenericError(http.StatusInternalServerError)
 	}
 
@@ -179,7 +179,7 @@ func (s ArticleHandler) DeleteArticle(r *http.Request) (_ httpe.Response, err er
 
 	ctx, err = middleware.ConvertTokenContext(ctx)
 	if err != nil {
-		s.logger.Log(ctx, "failed convert context metadata", "transport", "http", "err", err)
+		s.logger.Log(ctx, "Failed convert context metadata", "transport", "http", "err", err)
 		return nil, httpe.NewGenericError(http.StatusInternalServerError)
 	}
 

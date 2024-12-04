@@ -142,7 +142,7 @@ func (s UserHandler) UpdateUser(r *http.Request) (_ httpe.Response, err error) {
 
 	ctx, err = middleware.ConvertTokenContext(ctx)
 	if err != nil {
-		s.logger.Log(ctx, "failed convert context metadata", "transport", "http", "err", err)
+		s.logger.Log(ctx, "Failed convert context metadata", "transport", "http", "err", err)
 		return nil, httpe.NewGenericError(http.StatusInternalServerError)
 	}
 
@@ -176,7 +176,7 @@ func (s UserHandler) DeleteUser(r *http.Request) (_ httpe.Response, err error) {
 
 	ctx, err = middleware.ConvertTokenContext(ctx)
 	if err != nil {
-		s.logger.Log(ctx, "failed convert context metadata", "transport", "http", "err", err)
+		s.logger.Log(ctx, "Failed convert context metadata", "transport", "http", "err", err)
 		return nil, httpe.NewGenericError(http.StatusInternalServerError)
 	}
 
