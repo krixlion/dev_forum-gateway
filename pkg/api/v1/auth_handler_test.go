@@ -84,7 +84,7 @@ func TestAuthHandler_SignIn(t *testing.T) {
 					return r
 				}(),
 			},
-			want:    httpe.NewResponse(http.StatusOK, map[string]string{"refresh_token": "test-refresh-token"}),
+			want:    httpe.NewResponse(http.StatusOK, SignInResponse{RefreshToken: "test-refresh-token"}),
 			wantErr: false,
 		},
 		{
@@ -223,7 +223,7 @@ func TestAuthHandler_GetAccessToken(t *testing.T) {
 					return r
 				}(),
 			},
-			want:    httpe.NewResponse(http.StatusOK, map[string]string{"access_token": "test-access-token"}),
+			want:    httpe.NewResponse(http.StatusOK, GetAccessTokenResponse{AccessToken: "test-access-token"}),
 			wantErr: false,
 		},
 		{
