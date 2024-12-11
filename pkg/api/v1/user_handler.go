@@ -19,6 +19,8 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+var _ http.Handler = (*UserHandler)(nil)
+
 // UserHandler handles all `/user` endpoints.
 type UserHandler struct {
 	router      chi.Router

@@ -15,6 +15,8 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+var _ http.Handler = (*AuthHandler)(nil)
+
 // AuthHandler handles all `/auth` endpoints.
 type AuthHandler struct {
 	router      chi.Router
