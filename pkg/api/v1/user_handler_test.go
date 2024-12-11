@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
 	"time"
 
@@ -106,13 +107,11 @@ func TestUserHandler_GetUser(t *testing.T) {
 					return r
 				}(),
 			},
-			want: httpe.NewResponse(http.StatusOK, &pb.User{
+			want: httpe.NewResponse(http.StatusOK, User{
 				Id:        "test-id",
 				Name:      "test-name",
-				Email:     "test-email",
-				Password:  "test-password",
-				CreatedAt: timestamppb.New(testtime),
-				UpdatedAt: timestamppb.New(testtime),
+				CreatedAt: testtime.Format(time.RFC3339),
+				UpdatedAt: testtime.Format(time.RFC3339),
 			}),
 			wantErr: false,
 		},
@@ -163,8 +162,8 @@ func TestUserHandler_GetUsers(t *testing.T) {
 			fields: fields{
 				userService: func() pb.UserServiceClient {
 					ms := mocks.NewUserStreamClient()
-					ms.On("Recv").Return(&pb.User{Id: "test-id"}, nil).Once()
-					ms.On("Recv").Return(&pb.User{Id: "test-id2"}, nil).Once()
+					ms.On("Recv").Return(&pb.User{Id: "test-id", CreatedAt: timestamppb.New(testtime), UpdatedAt: timestamppb.New(testtime)}, nil).Once()
+					ms.On("Recv").Return(&pb.User{Id: "test-id2", CreatedAt: timestamppb.New(testtime), UpdatedAt: timestamppb.New(testtime)}, nil).Once()
 					ms.On("Recv").Return((*pb.User)(nil), io.EOF).Once()
 					m := mocks.NewUserClient()
 
@@ -175,12 +174,16 @@ func TestUserHandler_GetUsers(t *testing.T) {
 			args: args{
 				r: httptest.NewRequest("GET", "/?filter=test-filter&offset=test-offset&limit=test-limit", nil),
 			},
-			want: httpe.NewResponse(http.StatusOK, []*pb.User{
+			want: httpe.NewResponse(http.StatusOK, []User{
 				{
-					Id: "test-id",
+					Id:        "test-id",
+					CreatedAt: testtime.Format(time.RFC3339),
+					UpdatedAt: testtime.Format(time.RFC3339),
 				},
 				{
-					Id: "test-id2",
+					Id:        "test-id2",
+					CreatedAt: testtime.Format(time.RFC3339),
+					UpdatedAt: testtime.Format(time.RFC3339),
 				},
 			}),
 			wantErr: false,
@@ -390,6 +393,44 @@ func TestUserHandler_DeleteUser(t *testing.T) {
 			}
 			if !cmp.Equal(got, tt.want, cmp.AllowUnexported(httpe.HttpResponse{})) {
 				t.Errorf("UserHandler.DeleteUser():\n got = %v\n want = %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_pbToUser(t *testing.T) {
+	type args struct {
+		v *pb.User
+	}
+	tests := []struct {
+		name string
+		args args
+		want User
+	}{
+		{
+			name: "Test simple message is converted as expected",
+			args: args{
+				v: &pb.User{
+					Id:        "test-id",
+					Name:      "test-name",
+					Email:     "test-email",
+					Password:  "test-password",
+					CreatedAt: timestamppb.New(testtime),
+					UpdatedAt: timestamppb.New(testtime),
+				},
+			},
+			want: User{
+				Id:        "test-id",
+				Name:      "test-name",
+				CreatedAt: testtime.Format(time.RFC3339),
+				UpdatedAt: testtime.Format(time.RFC3339),
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := pbToUser(tt.args.v); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("pbToUser(): got = %v\n want = %v", got, tt.want)
 			}
 		})
 	}

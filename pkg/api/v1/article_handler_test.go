@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -93,11 +94,11 @@ func TestArticleHandler_GetArticle(t *testing.T) {
 					return r
 				}(),
 			},
-			want: httpe.NewResponse(http.StatusOK, &pb.Article{
+			want: httpe.NewResponse(http.StatusOK, Article{
 				Id:        "test-id",
 				Title:     "test-title",
-				CreatedAt: timestamppb.New(testtime),
-				UpdatedAt: timestamppb.New(testtime),
+				CreatedAt: testtime.Format(time.RFC3339),
+				UpdatedAt: testtime.Format(time.RFC3339),
 			}),
 			wantErr: false,
 		},
@@ -148,8 +149,8 @@ func TestArticleHandler_GetArticles(t *testing.T) {
 			fields: fields{
 				articleService: func() pb.ArticleServiceClient {
 					ms := mocks.NewArticleStreamClient()
-					ms.On("Recv").Return(&pb.Article{Id: "test-id"}, nil).Once()
-					ms.On("Recv").Return(&pb.Article{Id: "test-id2"}, nil).Once()
+					ms.On("Recv").Return(&pb.Article{Id: "test-id", CreatedAt: timestamppb.New(testtime), UpdatedAt: timestamppb.New(testtime)}, nil).Once()
+					ms.On("Recv").Return(&pb.Article{Id: "test-id2", CreatedAt: timestamppb.New(testtime), UpdatedAt: timestamppb.New(testtime)}, nil).Once()
 					ms.On("Recv").Return((*pb.Article)(nil), io.EOF).Once()
 					m := mocks.NewArticleClient()
 
@@ -163,12 +164,16 @@ func TestArticleHandler_GetArticles(t *testing.T) {
 					return r
 				}(),
 			},
-			want: httpe.NewResponse(http.StatusOK, []*pb.Article{
+			want: httpe.NewResponse(http.StatusOK, []Article{
 				{
-					Id: "test-id",
+					Id:        "test-id",
+					CreatedAt: testtime.Format(time.RFC3339),
+					UpdatedAt: testtime.Format(time.RFC3339),
 				},
 				{
-					Id: "test-id2",
+					Id:        "test-id2",
+					CreatedAt: testtime.Format(time.RFC3339),
+					UpdatedAt: testtime.Format(time.RFC3339),
 				},
 			}),
 			wantErr: false,
@@ -390,6 +395,46 @@ func TestArticleHandler_DeleteArticle(t *testing.T) {
 			}
 			if !cmp.Equal(got, tt.want, cmp.AllowUnexported(httpe.HttpResponse{})) {
 				t.Errorf("ArticleHandler.DeleteArticle():\n got = %v\n want = %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_pbToArticle(t *testing.T) {
+	type args struct {
+		v *pb.Article
+	}
+	tests := []struct {
+		name string
+		args args
+		want Article
+	}{
+		{
+			name: "Test simple message is converted as expected",
+			args: args{
+				v: &pb.Article{
+					Id:        "test-id",
+					UserId:    "test-user-id",
+					Title:     "test-title",
+					Body:      "test-body",
+					CreatedAt: timestamppb.New(testtime),
+					UpdatedAt: timestamppb.New(testtime),
+				},
+			},
+			want: Article{
+				Id:        "test-id",
+				UserId:    "test-user-id",
+				Title:     "test-title",
+				Body:      "test-body",
+				CreatedAt: testtime.Format(time.RFC3339),
+				UpdatedAt: testtime.Format(time.RFC3339),
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := pbToArticle(tt.args.v); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("pbToArticle():\n got = %v\n want = %v", got, tt.want)
 			}
 		})
 	}

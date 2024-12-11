@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	pb "github.com/krixlion/dev_forum-article/pkg/grpc/v1"
@@ -20,6 +21,15 @@ import (
 )
 
 var _ http.Handler = (*ArticleHandler)(nil)
+
+type Article struct {
+	Id        string `json:"id,omitempty" example:"fe9f6053-8929-4868-be47-f3015c46577b"`
+	UserId    string `json:"user_id,omitempty" example:"fe9f6053-8929-4868-be47-f3015c46577b"`
+	Title     string `json:"title,omitempty" example:"How to train your AI dragon!"`
+	Body      string `json:"body,omitempty" example:"Lorem ipsum dolor sit amet, consectetur adipiscing elit."`
+	CreatedAt string `json:"created_at,omitempty" example:"2009-11-10T23:00:00Z"` // RFC 3339 format.
+	UpdatedAt string `json:"updated_at,omitempty" example:"2009-11-10T23:30:00Z"` // RFC 3339 format.
+}
 
 // ArticleHandler handles all `/article` endpoints.
 type ArticleHandler struct {
@@ -61,7 +71,7 @@ func (s ArticleHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 //	@Router		/articles/{id}	[get]
 //	@Produce	json
 //	@Param		id	path		string	true	"Article ID"	Format(uuid)	Example(fe9f6053-8929-4868-be47-f3015c46577b)
-//	@Success	200	{object}	pb.Article
+//	@Success	200	{object}	Article
 //	@Failure	404	"Article could not be found."
 //	@Failure	500	"An unexpected error occurred."
 func (s ArticleHandler) GetArticle(r *http.Request) (_ httpe.Response, err error) {
@@ -82,7 +92,7 @@ func (s ArticleHandler) GetArticle(r *http.Request) (_ httpe.Response, err error
 		return nil, httpe.NewGenericError(http.StatusInternalServerError)
 	}
 
-	return httpe.NewResponse(http.StatusOK, resp.GetArticle()), nil
+	return httpe.NewResponse(http.StatusOK, pbToArticle(resp.GetArticle())), nil
 }
 
 // GetArticles queries articles mathing given filter from the ArticleService.
@@ -96,7 +106,7 @@ func (s ArticleHandler) GetArticle(r *http.Request) (_ httpe.Response, err error
 //	@Produce	json
 //	@Param		offset	query	int	false	"items offset"			Example(60)
 //	@Param		limit	query	int	false	"item limit per page"	Example(30)
-//	@Success	200		{array}	pb.Article
+//	@Success	200		{array}	Article
 //	@Failure	500		"An unexpected error occurred."
 func (s ArticleHandler) GetArticles(r *http.Request) (_ httpe.Response, err error) {
 	ctx := r.Context()
@@ -111,9 +121,9 @@ func (s ArticleHandler) GetArticles(r *http.Request) (_ httpe.Response, err erro
 		return nil, httpe.NewGenericError(http.StatusInternalServerError)
 	}
 
-	var articles []*pb.Article
+	var articles []Article
 	for {
-		article, err := stream.Recv()
+		pbArticle, err := stream.Recv()
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				break
@@ -121,7 +131,7 @@ func (s ArticleHandler) GetArticles(r *http.Request) (_ httpe.Response, err erro
 			s.logger.Log(ctx, "Failed to read article from stream", "transport", "grpc", "err", err)
 			return nil, httpe.NewGenericError(http.StatusInternalServerError)
 		}
-		articles = append(articles, article)
+		articles = append(articles, pbToArticle(pbArticle))
 	}
 
 	return httpe.NewResponse(http.StatusOK, articles), nil
@@ -277,4 +287,16 @@ func (s ArticleHandler) DeleteArticle(r *http.Request) (_ httpe.Response, err er
 		return nil, httpe.NewGenericError(http.StatusInternalServerError)
 	}
 	return httpe.NewResponse(http.StatusNoContent, nil), nil
+}
+
+// pbToArticle converts pb.Article message to an Article model.
+func pbToArticle(v *pb.Article) Article {
+	return Article{
+		Id:        v.GetId(),
+		UserId:    v.GetUserId(),
+		Title:     v.GetTitle(),
+		Body:      v.GetBody(),
+		CreatedAt: v.GetCreatedAt().AsTime().Format(time.RFC3339),
+		UpdatedAt: v.GetUpdatedAt().AsTime().Format(time.RFC3339),
+	}
 }

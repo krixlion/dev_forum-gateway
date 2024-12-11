@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/krixlion/dev_forum-auth/pkg/tokens"
@@ -20,6 +21,13 @@ import (
 )
 
 var _ http.Handler = (*UserHandler)(nil)
+
+type User struct {
+	Id        string `json:"id,omitempty" example:"fe9f6053-8929-4868-be47-f3015c46577b"`
+	Name      string `json:"name,omitempty" example:"John Doe"`
+	CreatedAt string `json:"created_at,omitempty" example:"2009-11-10T23:00:00Z"` // RFC 3339 format.
+	UpdatedAt string `json:"updated_at,omitempty" example:"2009-11-10T23:30:00Z"` // RFC 3339 format.
+}
 
 // UserHandler handles all `/user` endpoints.
 type UserHandler struct {
@@ -61,7 +69,7 @@ func (s UserHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 //	@Router		/users/{id}	[get]
 //	@Produce	json
 //	@Param		id	path		string	true	"User ID"	Format(uuid)	Example(fe9f6053-8929-4868-be47-f3015c46577b)
-//	@Success	200	{object}	pb.User
+//	@Success	200	{object}	User
 //	@Failure	404	"User could not be found."
 //	@Failure	500	"An unexpected error occurred."
 func (s UserHandler) GetUser(r *http.Request) (_ httpe.Response, err error) {
@@ -82,7 +90,7 @@ func (s UserHandler) GetUser(r *http.Request) (_ httpe.Response, err error) {
 		return nil, httpe.NewGenericError(http.StatusInternalServerError)
 	}
 
-	return httpe.NewResponse(http.StatusOK, resp.GetUser()), nil
+	return httpe.NewResponse(http.StatusOK, pbToUser(resp.GetUser())), nil
 }
 
 // GetUsers queries users mathing given filter from the UserService.
@@ -97,7 +105,7 @@ func (s UserHandler) GetUser(r *http.Request) (_ httpe.Response, err error) {
 //	@Param		offset	query	int		false	"items offset"			Example(60)
 //	@Param		limit	query	int		false	"item limit per page"	Example(30)
 //	@Param		filter	query	string	false	"search filter"			Example(name[$eq]=john&email[$eq]=doe@example.com)
-//	@Success	200		{array}	pb.User
+//	@Success	200		{array}	User
 //	@Failure	500		"An unexpected error occurred."
 func (s UserHandler) GetUsers(r *http.Request) (_ httpe.Response, err error) {
 	ctx := r.Context()
@@ -114,9 +122,9 @@ func (s UserHandler) GetUsers(r *http.Request) (_ httpe.Response, err error) {
 		return nil, httpe.NewGenericError(http.StatusInternalServerError)
 	}
 
-	var users []*pb.User
+	var users []User
 	for {
-		user, err := stream.Recv()
+		pbUser, err := stream.Recv()
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				break
@@ -124,7 +132,7 @@ func (s UserHandler) GetUsers(r *http.Request) (_ httpe.Response, err error) {
 			s.logger.Log(ctx, "Failed to read user from stream", "transport", "grpc", "err", err)
 			return nil, httpe.NewGenericError(http.StatusInternalServerError)
 		}
-		users = append(users, user)
+		users = append(users, pbToUser(pbUser))
 	}
 
 	return httpe.NewResponse(http.StatusOK, users), nil
@@ -277,4 +285,14 @@ func (s UserHandler) DeleteUser(r *http.Request) (_ httpe.Response, err error) {
 		return nil, httpe.NewGenericError(http.StatusInternalServerError)
 	}
 	return httpe.NewResponse(http.StatusNoContent, nil), nil
+}
+
+// pbToUser converts pb.User message to an User model.
+func pbToUser(v *pb.User) User {
+	return User{
+		Id:        v.GetId(),
+		Name:      v.GetName(),
+		CreatedAt: v.GetCreatedAt().AsTime().Format(time.RFC3339),
+		UpdatedAt: v.GetUpdatedAt().AsTime().Format(time.RFC3339),
+	}
 }
