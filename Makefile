@@ -13,7 +13,7 @@ mod-init:
 
 openapi:
 	swag fmt
-	swag init -g pkg/api/v1/handler.go -v3.1 -ot json --parseFuncBody --generatedTime
+	swag init -g pkg/api/v1/handler.go -v3.1 -ot json --parseFuncBody --generatedTime --requiredByDefault
 	mv docs/swagger.json docs/openapi.json
 	# Remove 'api.' package prefixes from object names.
 	sed -i -e 's/api\.//g' docs/openapi.json 

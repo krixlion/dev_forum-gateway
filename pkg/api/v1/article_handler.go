@@ -196,8 +196,8 @@ func (s ArticleHandler) CreateArticle(r *http.Request) (_ httpe.Response, err er
 // UpdateArticleRequest exists mainly for documentation purposes.
 // It's parsed by the OpenAPI docs generator.
 type UpdateArticleRequest struct {
-	Title string `json:"title,omitempty" example:"How to train your AI dragon!"`
-	Body  string `json:"body,omitempty" example:"Lorem ipsum dolor sit amet, consectetur adipiscing elit."`
+	Title string `json:"title,omitempty" example:"How to train your AI dragon!" validate:"optional"`
+	Body  string `json:"body,omitempty" example:"Lorem ipsum dolor sit amet, consectetur adipiscing elit." validate:"optional"`
 }
 
 // UpdateArticle updates an existing article in the ArticleService.

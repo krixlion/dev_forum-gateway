@@ -191,9 +191,9 @@ func (s UserHandler) CreateUser(r *http.Request) (_ httpe.Response, err error) {
 // UpdateUserRequest exists mainly for documentation purposes.
 // It's parsed by the OpenAPI docs generator.
 type UpdateUserRequest struct {
-	Name     string `json:"name,omitempty" example:"username123"`
-	Email    string `json:"email,omitempty" example:"example@gmail.com" format:"email"`
-	Password string `json:"password,omitempty" example:"zaq1@WSXEDC"`
+	Name     string `json:"name,omitempty" example:"username123" validate:"optional"`
+	Email    string `json:"email,omitempty" example:"example@gmail.com" format:"email" validate:"optional"`
+	Password string `json:"password,omitempty" example:"zaq1@WSXEDC" validate:"optional"`
 }
 
 // UpdateUser updates an existing user in the UserService.
