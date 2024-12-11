@@ -50,7 +50,7 @@ func (s AuthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // SignInRequest exists mainly for documentation purposes.
 // It's parsed by the OpenAPI docs generator.
 type SignInRequest struct {
-	Email    string `json:"email,omitempty" example:"example@gmail.com"`
+	Email    string `json:"email,omitempty" example:"example@gmail.com" format:"email"`
 	Password string `json:"password,omitempty" example:"zaq1@WSXEDC"`
 }
 

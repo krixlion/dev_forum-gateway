@@ -23,12 +23,12 @@ import (
 var _ http.Handler = (*ArticleHandler)(nil)
 
 type Article struct {
-	Id        string `json:"id,omitempty" example:"fe9f6053-8929-4868-be47-f3015c46577b"`
-	UserId    string `json:"user_id,omitempty" example:"fe9f6053-8929-4868-be47-f3015c46577b"`
+	Id        string `json:"id,omitempty" example:"fe9f6053-8929-4868-be47-f3015c46577b" format:"uuid"`
+	UserId    string `json:"user_id,omitempty" example:"fe9f6053-8929-4868-be47-f3015c46577b" format:"uuid"`
 	Title     string `json:"title,omitempty" example:"How to train your AI dragon!"`
 	Body      string `json:"body,omitempty" example:"Lorem ipsum dolor sit amet, consectetur adipiscing elit."`
-	CreatedAt string `json:"created_at,omitempty" example:"2009-11-10T23:00:00Z"` // RFC 3339 format.
-	UpdatedAt string `json:"updated_at,omitempty" example:"2009-11-10T23:30:00Z"` // RFC 3339 format.
+	CreatedAt string `json:"created_at,omitempty" example:"2009-11-10T23:00:00Z" format:"RFC3339"`
+	UpdatedAt string `json:"updated_at,omitempty" example:"2009-11-10T23:30:00Z" format:"RFC3339"`
 }
 
 // ArticleHandler handles all `/article` endpoints.
@@ -147,7 +147,7 @@ type CreateArticleRequest struct {
 // CreateArticleResponse exists mainly for documentation purposes.
 // It's parsed by the OpenAPI docs generator.
 type CreateArticleResponse struct {
-	Id string `json:"id,omitempty" example:"fe9f6053-8929-4868-be47-f3015c46577b"`
+	Id string `json:"id,omitempty" example:"fe9f6053-8929-4868-be47-f3015c46577b" format:"uuid"`
 }
 
 // CreateArticle creates an article in the ArticleService and returns its ID.

@@ -23,10 +23,10 @@ import (
 var _ http.Handler = (*UserHandler)(nil)
 
 type User struct {
-	Id        string `json:"id,omitempty" example:"fe9f6053-8929-4868-be47-f3015c46577b"`
+	Id        string `json:"id,omitempty" example:"fe9f6053-8929-4868-be47-f3015c46577b" format:"uuid"`
 	Name      string `json:"name,omitempty" example:"John Doe"`
-	CreatedAt string `json:"created_at,omitempty" example:"2009-11-10T23:00:00Z"` // RFC 3339 format.
-	UpdatedAt string `json:"updated_at,omitempty" example:"2009-11-10T23:30:00Z"` // RFC 3339 format.
+	CreatedAt string `json:"created_at,omitempty" example:"2009-11-10T23:00:00Z" format:"RFC3339"`
+	UpdatedAt string `json:"updated_at,omitempty" example:"2009-11-10T23:30:00Z" format:"RFC3339"`
 }
 
 // UserHandler handles all `/user` endpoints.
@@ -142,14 +142,14 @@ func (s UserHandler) GetUsers(r *http.Request) (_ httpe.Response, err error) {
 // It's parsed by the OpenAPI docs generator.
 type CreateUserRequest struct {
 	Name     string `json:"name,omitempty" example:"username123"`
-	Email    string `json:"email,omitempty" example:"example@gmail.com"`
+	Email    string `json:"email,omitempty" example:"example@gmail.com" format:"email"`
 	Password string `json:"password,omitempty" example:"zaq1@WSXEDC"`
 }
 
 // CreateUserResponse exists mainly for documentation purposes.
 // It's parsed by the OpenAPI docs generator.
 type CreateUserResponse struct {
-	Id string `json:"id,omitempty" example:"fe9f6053-8929-4868-be47-f3015c46577b"`
+	Id string `json:"id,omitempty" example:"fe9f6053-8929-4868-be47-f3015c46577b" format:"uuid"`
 }
 
 // CreateUser creates a user in the UserService and returns its ID.
@@ -192,7 +192,7 @@ func (s UserHandler) CreateUser(r *http.Request) (_ httpe.Response, err error) {
 // It's parsed by the OpenAPI docs generator.
 type UpdateUserRequest struct {
 	Name     string `json:"name,omitempty" example:"username123"`
-	Email    string `json:"email,omitempty" example:"example@gmail.com"`
+	Email    string `json:"email,omitempty" example:"example@gmail.com" format:"email"`
 	Password string `json:"password,omitempty" example:"zaq1@WSXEDC"`
 }
 
